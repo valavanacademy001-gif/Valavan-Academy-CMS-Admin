@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { parseYouTubeUrl, getYouTubeThumbnail } from '@/lib/utils'
-import { ArrowLeft, Loader2, Youtube, Video } from 'lucide-react'
+import { ArrowLeft, Loader2, Play, Video } from 'lucide-react'
 import Link from 'next/link'
 
 export default function NewLearnerStoryPage() {
@@ -100,7 +100,7 @@ export default function NewLearnerStoryPage() {
 
         <div>
           <label className="label flex items-center gap-2">
-            <Youtube className="w-4 h-4 text-red-600" />
+            <Play className="w-4 h-4 text-red-600" />
             YouTube Video / Shorts URL
           </label>
           <input

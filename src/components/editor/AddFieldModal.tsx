@@ -34,7 +34,7 @@ export default function AddFieldModal({
   sectionId: string
   currentFieldCount: number
   onClose: () => void
-  onAdded: (field: FieldData) => void
+  onAdded: (field: any) => void
 }) {
   const [form, setForm] = useState({ name: '', label: '', field_type: 'short_text', placeholder: '' })
   const [adding, setAdding] = useState(false)
@@ -60,7 +60,7 @@ export default function AddFieldModal({
 
     setAdding(false)
     if (error || !field) return
-    onAdded({ ...field, value: null } as FieldData)
+    onAdded({ ...(field as any), value: null })
   }
 
   return (

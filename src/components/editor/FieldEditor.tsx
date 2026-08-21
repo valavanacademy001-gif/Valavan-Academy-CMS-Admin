@@ -1,6 +1,6 @@
 'use client'
 
-import { Image, Link, Youtube, Video, AlignLeft, ToggleLeft, Hash, Palette, Type } from 'lucide-react'
+import { Image, Link, Play, Video, AlignLeft, ToggleLeft, Hash, Palette, Type } from 'lucide-react'
 
 type FieldData = {
   id: string; name: string; label: string; field_type: string;
@@ -18,7 +18,7 @@ const fieldTypeIcon: Record<string, React.ReactNode> = {
   email: <Link className="w-4 h-4" />,
   image: <Image className="w-4 h-4" />,
   video: <Video className="w-4 h-4" />,
-  youtube: <Youtube className="w-4 h-4" />,
+  youtube: <Play className="w-4 h-4 text-red-500" />,
   color: <Palette className="w-4 h-4" />,
   toggle: <ToggleLeft className="w-4 h-4" />,
 }
