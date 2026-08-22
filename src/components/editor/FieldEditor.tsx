@@ -1,6 +1,8 @@
 'use client'
 
-import { Image, Link, Play, Video, AlignLeft, ToggleLeft, Hash, Palette, Type } from 'lucide-react'
+import { useState } from 'react'
+import { Image, Link, Play, Video, AlignLeft, ToggleLeft, Hash, Palette, Type, FolderOpen, RefreshCw } from 'lucide-react'
+import MediaPickerModal from '@/components/media/MediaPickerModal'
 
 type FieldData = {
   id: string; name: string; label: string; field_type: string;
@@ -32,6 +34,7 @@ export default function FieldEditor({
   value: string
   onChange: (val: string) => void
 }) {
+  const [showMediaPicker, setShowMediaPicker] = useState(false)
   const placeholder = field.placeholder ?? ''
 
   const renderInput = () => {
@@ -114,35 +117,103 @@ export default function FieldEditor({
       case 'image':
         return (
           <div className="space-y-2">
-            <input
-              type="url"
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              placeholder="https://... or /assets/image.jpg"
-              className="input"
-            />
+            <div className="flex gap-2 items-center">
+              <input
+                type="text"
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder="e.g. /assets/certifications/2.webp or https://..."
+                className="input font-mono text-sm flex-1"
+              />
+              <button
+                type="button"
+                onClick={() => setShowMediaPicker(true)}
+                className="btn-secondary py-2 px-3 text-xs font-medium shrink-0 flex items-center gap-1.5 bg-blue-50/80 hover:bg-blue-100 text-[#1748BB] border-blue-200"
+                title="Choose from Media Library"
+              >
+                <FolderOpen className="w-3.5 h-3.5" />
+                <span>Media Library</span>
+              </button>
+            </div>
             {value && (
-              <div className="mt-2 relative w-full max-w-xs h-32 rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
-                <img
-                  src={value}
-                  alt="Preview"
-                  className="w-full h-full object-cover"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-                />
+              <div className="mt-2.5 p-3 bg-gray-50 rounded-xl border border-gray-200 flex items-start gap-4">
+                <div className="w-32 h-22 rounded-lg overflow-hidden bg-black/5 border border-gray-200 shrink-0 relative flex items-center justify-center shadow-xs">
+                  <img
+                    src={value}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      if (!target.src.startsWith('http://localhost:3000') && value.startsWith('/')) {
+                        target.src = `http://localhost:3000${value}`;
+                      }
+                    }}
+                  />
+                </div>
+                <div className="flex-1 min-w-0 text-xs text-gray-500 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-gray-800 text-sm">Active Preview</span>
+                    <button
+                      type="button"
+                      onClick={() => setShowMediaPicker(true)}
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#1748BB] hover:underline bg-white px-2 py-0.5 rounded border border-gray-200 shadow-2xs hover:bg-gray-50"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                      Replace Image
+                    </button>
+                  </div>
+                  <div className="text-gray-400 truncate text-[11px] font-mono">{value}</div>
+                  <div className="inline-block px-2 py-0.5 rounded-full bg-blue-50 text-[#1748BB] font-mono text-[10px] font-medium border border-blue-100">
+                    Card Render: 340 × 240 px (680 × 480 px HD)
+                  </div>
+                </div>
               </div>
             )}
+            <MediaPickerModal
+              isOpen={showMediaPicker}
+              onClose={() => setShowMediaPicker(false)}
+              onSelect={(url) => onChange(url)}
+              allowedType="image"
+              title={`Choose image for "${field.label}"`}
+            />
           </div>
         )
 
       case 'video':
         return (
-          <input
-            type="url"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder="/assets/videos/video.mp4 or https://..."
-            className="input font-mono text-sm"
-          />
+          <div className="space-y-2">
+            <div className="flex gap-2 items-center">
+              <input
+                type="text"
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder="e.g. /assets/videos/hero-bg.mp4 or https://..."
+                className="input font-mono text-sm flex-1"
+              />
+              <button
+                type="button"
+                onClick={() => setShowMediaPicker(true)}
+                className="btn-secondary py-2 px-3 text-xs font-medium shrink-0 flex items-center gap-1.5 bg-blue-50/80 hover:bg-blue-100 text-[#1748BB] border-blue-200"
+                title="Choose from Media Library"
+              >
+                <FolderOpen className="w-3.5 h-3.5" />
+                <span>Media Library</span>
+              </button>
+            </div>
+            {value && (
+              <div className="text-xs text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                <Video className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate font-mono">{value}</span>
+              </div>
+            )}
+            <MediaPickerModal
+              isOpen={showMediaPicker}
+              onClose={() => setShowMediaPicker(false)}
+              onSelect={(url) => onChange(url)}
+              allowedType="video"
+              title={`Choose video for "${field.label}"`}
+            />
+          </div>
         )
 
       case 'color':

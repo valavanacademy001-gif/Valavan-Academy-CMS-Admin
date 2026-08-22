@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { ArrowLeft, Loader2, Shield } from 'lucide-react'
+import { ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
 
 export default function ForgotPasswordPage() {
@@ -36,63 +36,92 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4 relative overflow-hidden font-sans">
+      {/* Background Decorative Accents */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-b from-blue-100/40 via-blue-50/20 to-transparent blur-3xl pointer-events-none -z-10" />
+      <div
+        className="absolute inset-0 opacity-[0.4] pointer-events-none -z-10"
+        style={{
+          backgroundImage: 'radial-gradient(#E2E8F0 1px, transparent 1px)',
+          backgroundSize: '24px 24px',
+        }}
+      />
+
       <div className="w-full max-w-md">
+        
+        {/* Brand Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-[#1748BB] rounded-2xl mb-4 shadow-lg shadow-blue-500/25">
-            <Shield className="w-8 h-8 text-white" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-2xl mb-4 p-2.5 shadow-md shadow-blue-500/10 border border-gray-200/80">
+            <img src="/logo-icon.png" alt="Valavan Academy" className="w-full h-full object-contain" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Reset Password</h1>
-          <p className="text-blue-200/70 text-sm mt-1">Valavan Academy Admin</p>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Reset Password</h1>
+          <p className="text-gray-500 text-sm mt-1">Valavan Academy Admin Control Center</p>
         </div>
 
-        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 shadow-2xl">
+        {/* Reset Card */}
+        <div className="bg-white border border-gray-200/80 rounded-2xl p-8 shadow-[0_20px_50px_rgba(0,0,0,0.06)]">
           {sent ? (
-            <div className="text-center">
-              <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-6 h-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+            <div className="text-center py-4 space-y-4">
+              <div className="w-12 h-12 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto border border-green-200">
+                <CheckCircle2 className="w-6 h-6" />
               </div>
-              <h3 className="text-white font-semibold mb-2">Check your email</h3>
-              <p className="text-blue-200/70 text-sm mb-6">
-                We sent a password reset link to <strong className="text-blue-200">{email}</strong>
+              <h3 className="text-gray-900 font-bold text-lg">Check your email</h3>
+              <p className="text-gray-500 text-sm">
+                We sent a password reset link to <strong className="text-gray-800">{email}</strong>
               </p>
-              <Link href="/login" className="text-blue-300 hover:text-blue-100 text-sm transition-colors">
-                ← Back to Login
-              </Link>
+              <div className="pt-2">
+                <Link
+                  href="/login"
+                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#1748BB] hover:underline"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Back to Login
+                </Link>
+              </div>
             </div>
           ) : (
             <form onSubmit={handleReset} className="space-y-4">
-              <p className="text-blue-200/70 text-sm mb-4">
-                Enter your admin email and we will send you a reset link.
+              <p className="text-gray-500 text-sm mb-4">
+                Enter your admin email address and we will send you a secure password reset link.
               </p>
               <div>
-                <label className="block text-sm font-medium text-blue-100 mb-1.5">Email Address</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  Email Address
+                </label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   placeholder="admin@example.com"
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-200/50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all"
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#1748BB] focus:border-transparent transition-all shadow-2xs"
                 />
               </div>
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#1748BB] hover:bg-[#0f3494] text-white font-semibold rounded-xl transition-all disabled:opacity-60"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3.5 bg-[#1748BB] hover:bg-[#0E3594] text-white font-bold text-sm rounded-xl transition-all duration-150 disabled:opacity-60 shadow-lg shadow-blue-600/25 cursor-pointer"
               >
                 {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                {loading ? 'Sending...' : 'Send Reset Link'}
+                <span>{loading ? 'Sending Link...' : 'Send Reset Link'}</span>
               </button>
-              <Link href="/login" className="flex items-center gap-1 text-blue-300 hover:text-blue-100 text-sm transition-colors justify-center mt-2">
-                <ArrowLeft className="w-4 h-4" />
-                Back to Login
-              </Link>
+              <div className="text-center pt-2">
+                <Link
+                  href="/login"
+                  className="inline-flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-gray-800 transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Back to Login
+                </Link>
+              </div>
             </form>
           )}
         </div>
+
+        {/* Footer */}
+        <p className="text-center text-gray-400 text-xs mt-6">
+          © {new Date().getFullYear()} Valavan Academy. All rights reserved.
+        </p>
       </div>
     </div>
   )

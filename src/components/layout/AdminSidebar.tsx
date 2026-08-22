@@ -26,8 +26,8 @@ export default function AdminSidebar() {
       {/* Logo */}
       <div className="p-5 border-b border-gray-100">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-[#1748BB] rounded-lg flex items-center justify-center shrink-0">
-            <Shield className="w-5 h-5 text-white" />
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
+            <img src="/logo-icon.png" alt="Valavan Academy" className="w-9 h-9 object-contain" />
           </div>
           <div>
             <div className="text-sm font-bold text-gray-900 leading-tight">Valavan Academy</div>

@@ -25,7 +25,8 @@ export default async function LearnerStoriesPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {stories && stories.length > 0 ? (
           stories.map((story) => {
-            const { videoId } = story.youtube_url ? parseYouTubeUrl(story.youtube_url) : { videoId: null }
+            const parsed = story.youtube_url ? parseYouTubeUrl(story.youtube_url) : null
+            const videoId = story.youtube_video_id || parsed?.videoId || null
             const thumb = story.thumbnail_url || (videoId ? getYouTubeThumbnail(videoId) : null)
             return (
               <div key={story.id} className="card overflow-hidden group">

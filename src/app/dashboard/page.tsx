@@ -10,13 +10,15 @@ export default async function DashboardPage() {
   const supabase = await createClient()
 
   const [
-    { count: totalPages },
-    { count: publishedPages },
-    { count: draftPages },
-    { count: totalPrograms },
-    { count: totalMedia },
-    { count: totalTestimonials },
-    { data: recentLogs },
+    totalPagesRes,
+    publishedPagesRes,
+    draftPagesRes,
+    totalProgramsRes,
+    totalMediaRes,
+    totalTestimonialsRes,
+    recentLogsRes,
+    recentPagesRes,
+    recentProgramsRes,
   ] = await Promise.all([
     supabase.from('pages').select('*', { count: 'exact', head: true }),
     supabase.from('pages').select('*', { count: 'exact', head: true }).eq('status', 'published'),
@@ -25,15 +27,45 @@ export default async function DashboardPage() {
     supabase.from('media').select('*', { count: 'exact', head: true }),
     supabase.from('testimonials').select('*', { count: 'exact', head: true }),
     supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(8),
+    supabase.from('pages').select('id, title, updated_at, status').order('updated_at', { ascending: false }).limit(4),
+    supabase.from('programs').select('id, title, updated_at').order('updated_at', { ascending: false }).limit(4),
   ])
 
+  const totalPages = totalPagesRes.count ?? 0
+  const publishedPages = publishedPagesRes.count ?? 0
+  const draftPages = draftPagesRes.count ?? 0
+  const totalPrograms = totalProgramsRes.count ?? 0
+  const totalMedia = totalMediaRes.count ?? 0
+  const totalTestimonials = totalTestimonialsRes.count ?? 0
+
+  let recentActivity: Array<{ id: string; action: string; entity_name?: string | null; created_at: string }> = []
+  if (recentLogsRes?.data && recentLogsRes.data.length > 0) {
+    recentActivity = recentLogsRes.data
+  } else {
+    const pageLogs = (recentPagesRes?.data || []).map((p: any) => ({
+      id: p.id,
+      action: `Page ${p.status === 'published' ? 'published' : 'updated'}`,
+      entity_name: p.title,
+      created_at: p.updated_at,
+    }))
+    const programLogs = (recentProgramsRes?.data || []).map((pr: any) => ({
+      id: pr.id,
+      action: 'Program updated',
+      entity_name: pr.title,
+      created_at: pr.updated_at,
+    }))
+    recentActivity = [...pageLogs, ...programLogs].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    ).slice(0, 6)
+  }
+
   const stats = [
-    { label: 'Total Pages', value: totalPages ?? 0, icon: FileText, color: 'bg-blue-50 text-blue-600', href: '/dashboard/pages' },
-    { label: 'Published', value: publishedPages ?? 0, icon: Eye, color: 'bg-green-50 text-green-600', href: '/dashboard/pages?status=published' },
-    { label: 'Drafts', value: draftPages ?? 0, icon: Clock, color: 'bg-yellow-50 text-yellow-600', href: '/dashboard/pages?status=draft' },
-    { label: 'Programs', value: totalPrograms ?? 0, icon: BookOpen, color: 'bg-purple-50 text-purple-600', href: '/dashboard/programs' },
-    { label: 'Media Files', value: totalMedia ?? 0, icon: Image, color: 'bg-pink-50 text-pink-600', href: '/dashboard/media' },
-    { label: 'Testimonials', value: totalTestimonials ?? 0, icon: Star, color: 'bg-orange-50 text-orange-600', href: '/dashboard/testimonials' },
+    { label: 'Total Pages', value: totalPages, icon: FileText, color: 'bg-blue-50 text-blue-600', href: '/dashboard/pages' },
+    { label: 'Published', value: publishedPages, icon: Eye, color: 'bg-green-50 text-green-600', href: '/dashboard/pages?status=published' },
+    { label: 'Drafts', value: draftPages, icon: Clock, color: 'bg-yellow-50 text-yellow-600', href: '/dashboard/pages?status=draft' },
+    { label: 'Programs', value: totalPrograms, icon: BookOpen, color: 'bg-purple-50 text-purple-600', href: '/dashboard/programs' },
+    { label: 'Media Files', value: totalMedia, icon: Image, color: 'bg-pink-50 text-pink-600', href: '/dashboard/media' },
+    { label: 'Testimonials', value: totalTestimonials, icon: Star, color: 'bg-orange-50 text-orange-600', href: '/dashboard/testimonials' },
   ]
 
   const quickActions = [
@@ -110,9 +142,9 @@ export default async function DashboardPage() {
               <Clock className="w-4 h-4 text-[#1748BB]" />
               Recent Activity
             </h2>
-            {recentLogs && recentLogs.length > 0 ? (
+            {recentActivity && recentActivity.length > 0 ? (
               <div className="space-y-3">
-                {recentLogs.map((log) => (
+                {recentActivity.map((log) => (
                   <div key={log.id} className="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0">
                     <div className="w-2 h-2 rounded-full bg-[#1748BB] mt-1.5 shrink-0" />
                     <div className="flex-1 min-w-0">

@@ -4,12 +4,14 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { ArrowLeft, Loader2, Award } from 'lucide-react'
+import { ArrowLeft, Loader2, Award, FolderOpen, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
+import MediaPickerModal from '@/components/media/MediaPickerModal'
 
 export default function NewCertificationPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [showMediaPicker, setShowMediaPicker] = useState(false)
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -72,25 +74,74 @@ export default function NewCertificationPage() {
         </div>
 
         <div>
-          <label className="label">Certificate Image URL *</label>
-          <input
-            type="url"
-            value={form.image_url}
-            onChange={(e) => setForm((p) => ({ ...p, image_url: e.target.value }))}
-            required
-            placeholder="https://... or /assets/certifications/..."
-            className="input"
-          />
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="label mb-0">Certificate Image URL *</label>
+            <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+              Recommended: 1600 × 1200 px (4:3 ratio)
+            </span>
+          </div>
+          <div className="flex gap-2 items-center">
+            <input
+              type="text"
+              value={form.image_url}
+              onChange={(e) => setForm((p) => ({ ...p, image_url: e.target.value }))}
+              required
+              placeholder="e.g. /assets/certifications/2.webp or https://..."
+              className="input font-mono text-sm flex-1"
+            />
+            <button
+              type="button"
+              onClick={() => setShowMediaPicker(true)}
+              className="btn-secondary py-2 px-3 text-xs font-medium shrink-0 flex items-center gap-1.5 bg-blue-50/80 hover:bg-blue-100 text-[#1748BB] border-blue-200"
+              title="Choose from Media Library"
+            >
+              <FolderOpen className="w-3.5 h-3.5" />
+              <span>Media Library</span>
+            </button>
+          </div>
           {form.image_url && (
-            <div className="mt-3 relative aspect-[4/3] w-64 rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
-              <img
-                src={form.image_url}
-                alt="Certificate preview"
-                className="w-full h-full object-cover"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-              />
+            <div className="mt-3 p-3 bg-gray-50 rounded-xl border border-gray-200 flex items-start gap-4">
+              <div className="w-40 h-28 rounded-lg overflow-hidden bg-black/5 border border-gray-200 shrink-0 relative flex items-center justify-center">
+                <img
+                  src={form.image_url}
+                  alt="Certificate preview"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (!target.src.startsWith('http://localhost:3000') && form.image_url.startsWith('/')) {
+                      target.src = `http://localhost:3000${form.image_url}`;
+                    }
+                  }}
+                />
+              </div>
+              <div className="flex-1 min-w-0 text-xs text-gray-500 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-gray-800 text-sm">Certificate Preview</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowMediaPicker(true)}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#1748BB] hover:underline bg-white px-2 py-0.5 rounded border border-gray-200 shadow-2xs hover:bg-gray-50"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    Replace Image
+                  </button>
+                </div>
+                <div className="text-gray-400 truncate text-[11px] font-mono">{form.image_url}</div>
+                <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-mono text-[11px]">
+                  <span>Target: 1600 × 1200 px</span>
+                  <span>•</span>
+                  <span>4:3 Ratio</span>
+                </div>
+              </div>
             </div>
           )}
+          <MediaPickerModal
+            isOpen={showMediaPicker}
+            onClose={() => setShowMediaPicker(false)}
+            onSelect={(url) => setForm((p) => ({ ...p, image_url: url }))}
+            allowedType="image"
+            title="Choose Certificate Image"
+          />
         </div>
 
         <div>

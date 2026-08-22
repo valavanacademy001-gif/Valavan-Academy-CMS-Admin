@@ -130,17 +130,41 @@ export default function NewLearnerStoryPage() {
         </div>
 
         <div>
-          <label className="label">Custom Thumbnail URL</label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="label mb-0">Custom Thumbnail URL</label>
+            <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+              Recommended: 1280 × 720 px (16:9) or 1080 × 1920 px (9:16)
+            </span>
+          </div>
           <input
-            type="url"
+            type="text"
             value={form.thumbnail_url}
             onChange={(e) => setForm((p) => ({ ...p, thumbnail_url: e.target.value }))}
-            placeholder="https://... (auto-filled for YouTube)"
-            className="input"
+            placeholder="https://... or /assets/... (auto-filled for YouTube)"
+            className="input font-mono text-sm"
           />
           {form.thumbnail_url && (
-            <div className="mt-2 relative aspect-video w-48 rounded-lg overflow-hidden border border-gray-200">
-              <img src={form.thumbnail_url} alt="Thumbnail preview" className="w-full h-full object-cover" />
+            <div className="mt-3 p-3 bg-gray-50 rounded-xl border border-gray-200 flex items-start gap-4">
+              <div className="w-36 h-22 rounded-lg overflow-hidden bg-black/5 border border-gray-200 shrink-0 relative flex items-center justify-center">
+                <img
+                  src={form.thumbnail_url}
+                  alt="Thumbnail preview"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (!target.src.startsWith('http://localhost:3000') && form.thumbnail_url.startsWith('/')) {
+                      target.src = `http://localhost:3000${form.thumbnail_url}`;
+                    }
+                  }}
+                />
+              </div>
+              <div className="flex-1 min-w-0 text-xs text-gray-500 space-y-1">
+                <div className="font-semibold text-gray-800 text-sm">Thumbnail Preview</div>
+                <div className="text-gray-400 truncate">{form.thumbnail_url}</div>
+                <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-mono text-[11px]">
+                  <span>Target: 1280 × 720 px (16:9)</span>
+                </div>
+              </div>
             </div>
           )}
         </div>

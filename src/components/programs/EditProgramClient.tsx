@@ -4,9 +4,10 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { ArrowLeft, Loader2, Save, Trash2, Globe, Archive } from 'lucide-react'
+import { ArrowLeft, Loader2, Save, Trash2, Globe, Archive, FolderOpen, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
 import DeleteConfirmModal from '@/components/editor/DeleteConfirmModal'
+import MediaPickerModal from '@/components/media/MediaPickerModal'
 
 type ProgramData = {
   id: string; title: string; slug: string; subtitle: string | null;
@@ -23,6 +24,7 @@ export default function EditProgramClient({ program: initialProgram }: { program
   const [loading, setLoading] = useState(false)
   const [publishing, setPublishing] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const [showMediaPicker, setShowMediaPicker] = useState(false)
   const [form, setForm] = useState({
     title: program.title,
     slug: program.slug,
@@ -195,13 +197,73 @@ export default function EditProgramClient({ program: initialProgram }: { program
             </div>
           </div>
           <div>
-            <label className="label">Thumbnail URL</label>
-            <input type="url" value={form.thumbnail_url} onChange={(e) => setForm((p) => ({ ...p, thumbnail_url: e.target.value }))} className="input" />
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="label mb-0">Thumbnail URL</label>
+              <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+                Recommended: 1200 × 750 px (16:10 ratio)
+              </span>
+            </div>
+            <div className="flex gap-2 items-center">
+              <input
+                type="text"
+                value={form.thumbnail_url}
+                onChange={(e) => setForm((p) => ({ ...p, thumbnail_url: e.target.value }))}
+                placeholder="e.g. /assets/images/hero/ai-powered-GD.webp or https://..."
+                className="input font-mono text-sm flex-1"
+              />
+              <button
+                type="button"
+                onClick={() => setShowMediaPicker(true)}
+                className="btn-secondary py-2 px-3 text-xs font-medium shrink-0 flex items-center gap-1.5 bg-blue-50/80 hover:bg-blue-100 text-[#1748BB] border-blue-200"
+                title="Choose from Media Library"
+              >
+                <FolderOpen className="w-3.5 h-3.5" />
+                <span>Media Library</span>
+              </button>
+            </div>
             {form.thumbnail_url && (
-              <div className="mt-2 w-24 h-24 rounded-lg overflow-hidden border border-gray-200">
-                <img src={form.thumbnail_url} alt="Thumbnail preview" className="w-full h-full object-cover" />
+              <div className="mt-3 p-3 bg-gray-50 rounded-xl border border-gray-200 flex items-start gap-4">
+                <div className="w-36 h-22 rounded-lg overflow-hidden bg-black/5 border border-gray-200 shrink-0 relative flex items-center justify-center">
+                  <img
+                    src={form.thumbnail_url}
+                    alt="Thumbnail preview"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      if (!target.src.startsWith('http://localhost:3000') && form.thumbnail_url.startsWith('/')) {
+                        target.src = `http://localhost:3000${form.thumbnail_url}`;
+                      }
+                    }}
+                  />
+                </div>
+                <div className="flex-1 min-w-0 text-xs text-gray-500 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-gray-800 text-sm">Active Thumbnail Preview</span>
+                    <button
+                      type="button"
+                      onClick={() => setShowMediaPicker(true)}
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#1748BB] hover:underline bg-white px-2 py-0.5 rounded border border-gray-200 shadow-2xs hover:bg-gray-50"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                      Replace Image
+                    </button>
+                  </div>
+                  <div className="text-gray-400 truncate text-[11px] font-mono">{form.thumbnail_url}</div>
+                  <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-mono text-[11px]">
+                    <span>Target: 1200 × 750 px</span>
+                    <span>•</span>
+                    <span>16:10 Ratio</span>
+                  </div>
+                </div>
               </div>
             )}
+            <MediaPickerModal
+              isOpen={showMediaPicker}
+              onClose={() => setShowMediaPicker(false)}
+              onSelect={(url) => setForm((p) => ({ ...p, thumbnail_url: url }))}
+              allowedType="image"
+              title="Choose Program Thumbnail"
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
