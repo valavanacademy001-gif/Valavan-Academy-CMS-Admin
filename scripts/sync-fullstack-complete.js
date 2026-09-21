@@ -106,15 +106,21 @@ const FULLSTACK_SECTIONS = {
     ]
   },
   templates_bonus: {
-    name: 'Templates & Assets Bonus',
+    name: "What You'll Get (Bonus Access)",
     fields: [
-      { name: 'badge', label: 'Badge Text', field_type: 'short_text', val: 'Additional Bonuses', sort_order: 1 },
-      { name: 'title_prefix', label: 'Headline Prefix', field_type: 'short_text', val: 'Access To', sort_order: 2 },
-      { name: 'title_highlight', label: 'Headline Highlight (Blue)', field_type: 'short_text', val: 'Templatesworld', sort_order: 3 },
-      { name: 'subtitle', label: 'Subtitle', field_type: 'short_text', val: 'Save hours of work using ready-to-use professional creative resources', sort_order: 4 },
-      { name: 'image', label: 'Asset Vault Mockup Image', field_type: 'image', val: '/assets/programs/full-stack-creator/Untitled-design-3-1-1-2048x1152-1-1024x576.webp', sort_order: 5 },
-      { name: 'button_text', label: 'Button Text', field_type: 'short_text', val: 'Get Access Now', sort_order: 6 },
-      { name: 'enroll_url', label: 'Button URL', field_type: 'url', val: 'https://learn.valavanacademy.com/clientapp/signup', sort_order: 7 },
+      { name: 'badge', label: 'Badge Text', field_type: 'short_text', val: "WHAT YOU'LL GET", sort_order: 1 },
+      { name: 'title', label: 'Headline', field_type: 'short_text', val: 'Complete Program Access', sort_order: 2 },
+      { name: 'feature_1', label: 'Feature 1', field_type: 'short_text', val: 'Full Curriculum', sort_order: 10 },
+      { name: 'feature_2', label: 'Feature 2', field_type: 'short_text', val: 'Lifetime Access', sort_order: 11 },
+      { name: 'feature_3', label: 'Feature 3', field_type: 'short_text', val: 'Community Access', sort_order: 12 },
+      { name: 'feature_4', label: 'Feature 4', field_type: 'short_text', val: 'Resource Library', sort_order: 13 },
+      { name: 'feature_5', label: 'Feature 5', field_type: 'short_text', val: 'Templates & Assets', sort_order: 14 },
+      { name: 'feature_6', label: 'Feature 6', field_type: 'short_text', val: 'AI Systems', sort_order: 15 },
+      { name: 'feature_7', label: 'Feature 7', field_type: 'short_text', val: 'Project-Based Learning', sort_order: 16 },
+      { name: 'feature_8', label: 'Feature 8', field_type: 'short_text', val: 'Future Updates', sort_order: 17 },
+      { name: 'image', label: 'Asset Vault Mockup Image', field_type: 'image', val: '/assets/programs/full-stack-creator/Untitled-design-3-1-1-2048x1152-1-1024x576.webp', sort_order: 20 },
+      { name: 'button_text', label: 'Button Text', field_type: 'short_text', val: '🚀 Join Full Stack Creator Program', sort_order: 21 },
+      { name: 'enroll_url', label: 'Button URL', field_type: 'url', val: 'https://learn.valavanacademy.com/clientapp/signup', sort_order: 22 },
     ]
   },
   who_is_this_for: {
@@ -146,9 +152,14 @@ const FULLSTACK_SECTIONS = {
       { name: 'description', label: 'Description', field_type: 'long_text', val: 'Learn from creators focused on practical workflows, not boring theory', sort_order: 4 },
       { name: 'why_title_prefix', label: 'Left Box Headline Prefix', field_type: 'short_text', val: 'Why Choose', sort_order: 10 },
       { name: 'why_title_highlight', label: 'Left Box Headline Highlight (Blue)', field_type: 'short_text', val: 'Valavan Academy ?', sort_order: 11 },
-      { name: 'why_desc_1', label: 'Paragraph 1', field_type: 'long_text', val: 'At Valavan Academy, we believe creativity becomes powerful only when it turns into opportunity. With 15+ years of real-world design experience, we train students using practical methods that match today\'s industry needs.', sort_order: 12 },
-      { name: 'why_desc_2', label: 'Paragraph 2', field_type: 'long_text', val: 'More than 1,000 freelancers and studio designers have already upgraded their skills through our programs, and our 180K+ YouTube learning community continues to grow every day. Our mission is to help 10,000+ creative learners build confidence, develop job-ready portfolios, and step into freelancing or professional design careers successfully.', sort_order: 13 },
-      { name: 'team_image', label: 'Mentor Team Photo', field_type: 'image', val: '/assets/programs/full-stack-creator/team-1024x682-1.webp', sort_order: 14 },
+      { name: 'point_1', label: 'Point 1', field_type: 'short_text', val: 'Practical Learning', sort_order: 12 },
+      { name: 'point_2', label: 'Point 2', field_type: 'short_text', val: 'Tamil-First Education', sort_order: 13 },
+      { name: 'point_3', label: 'Point 3', field_type: 'short_text', val: 'Industry Experience', sort_order: 14 },
+      { name: 'point_4', label: 'Point 4', field_type: 'short_text', val: 'Proven Frameworks', sort_order: 15 },
+      { name: 'point_5', label: 'Point 5', field_type: 'short_text', val: 'Supportive Community', sort_order: 16 },
+      { name: 'point_6', label: 'Point 6', field_type: 'short_text', val: 'Real-World Focus', sort_order: 17 },
+      { name: 'why_desc_2', label: 'Mission Paragraph', field_type: 'long_text', val: 'More than 1,000 freelancers and studio designers have already upgraded their skills through our programs, and our 180K+ YouTube learning community continues to grow every day. Our mission is to help 10,000+ creative learners build confidence, develop job-ready portfolios, and step into freelancing or professional design careers successfully.', sort_order: 18 },
+      { name: 'team_image', label: 'Mentor Team Photo', field_type: 'image', val: '/assets/programs/full-stack-creator/team-1024x682-1.webp', sort_order: 19 },
     ]
   },
   offer: {
@@ -169,6 +180,21 @@ const FULLSTACK_SECTIONS = {
       { name: 'button_text', label: 'Button Text', field_type: 'short_text', val: 'Join Today', sort_order: 22 },
       { name: 'card_note', label: 'Card Sub-Note', field_type: 'short_text', val: 'For A Limited Time Only', sort_order: 23 },
       { name: 'enroll_url', label: 'Enroll Button URL', field_type: 'url', val: 'https://learn.valavanacademy.com/clientapp/signup', sort_order: 24 },
+    ]
+  },
+  final_cta: {
+    name: 'Final Call To Action (Pre-FAQ)',
+    fields: [
+      { name: 'badge', label: 'Badge Text (Optional)', field_type: 'short_text', val: '', sort_order: 1 },
+      { name: 'title_prefix', label: 'Headline Prefix', field_type: 'short_text', val: 'The Future Belongs To ', sort_order: 2 },
+      { name: 'title_highlight', label: 'Headline Highlight (Blue)', field_type: 'short_text', val: 'Creators.', sort_order: 3 },
+      { name: 'headline_sub', label: 'Sub-Headline', field_type: 'long_text', val: 'The people who can design, communicate, create content, use AI, and build audiences will have more opportunities than ever before.', sort_order: 4 },
+      { name: 'description', label: 'Description', field_type: 'long_text', val: 'Start building those skills today.', sort_order: 5 },
+      { name: 'primary_btn_text', label: 'Primary CTA Text', field_type: 'short_text', val: '🚀 Join The Program', sort_order: 10 },
+      { name: 'primary_btn_url', label: 'Primary CTA URL', field_type: 'url', val: 'https://learn.valavanacademy.com/clientapp/signup', sort_order: 11 },
+      { name: 'secondary_btn_text', label: 'Secondary CTA Text', field_type: 'short_text', val: '📖 Explore Curriculum', sort_order: 12 },
+      { name: 'secondary_btn_url', label: 'Secondary CTA URL (e.g. #syllabus)', field_type: 'short_text', val: '#syllabus', sort_order: 13 },
+      { name: 'footer_subtext', label: 'Closing Line Text', field_type: 'long_text', val: 'Build Skills. Create Opportunities. Shape Your Future. — Valavan Academy – Empowering The Next Generation Of Digital Creators. 🚀', sort_order: 14 },
     ]
   },
   faq: {
