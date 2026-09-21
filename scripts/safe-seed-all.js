@@ -182,6 +182,25 @@ const PAGE_SECTIONS = {
         { name: 'button_text', label: 'Button Text', field_type: 'short_text', value: 'ENROLL NOW', sort_order: 2 },
         { name: 'enroll_url', label: 'Button URL', field_type: 'url', value: 'https://rzp.io/rzp/4ydecO7', sort_order: 3 },
       ]
+    },
+    {
+      slug: 'thank_you',
+      name: 'Thank You Page Content',
+      type: 'cta',
+      sort_order: 10,
+      fields: [
+        { name: 'heading', label: 'Headline', field_type: 'short_text', value: 'Thank You For Purchasing', sort_order: 1 },
+        { name: 'program_title', label: 'Program Name', field_type: 'short_text', value: '90-Day Graphic Design Mastery Program', sort_order: 2 },
+        { name: 'journey_subtext', label: 'Journey Subtitle', field_type: 'short_text', value: 'Your Creative Design Journey Starts Now', sort_order: 3 },
+        { name: 'inbox_note', label: 'Inbox Notice', field_type: 'long_text', value: 'Check Your Inbox! ✉️ We Have Sent Your Order Confirmation, Your Registered Email Address.', sort_order: 4 },
+        { name: 'activation_note', label: 'Working Hours & Activation Note', field_type: 'long_text', value: 'In Case Your Course Access Is Not Activated Instantly After Purchase, Kindly Note That It Will Be Activated Within Our Working Hours, Between 10:00 AM To 7:00 PM.', sort_order: 5 },
+        { name: 'course_access_btn_text', label: 'Course Access Button Text', field_type: 'short_text', value: 'I Need Course Access', sort_order: 6 },
+        { name: 'course_access_phone', label: 'Course Access WhatsApp Number', field_type: 'short_text', value: '+91 82205 11273', sort_order: 7 },
+        { name: 'course_access_btn_url', label: 'Course Access Custom Link (Optional)', field_type: 'url', value: '', sort_order: 8 },
+        { name: 'whatsapp_group_btn_text', label: 'WhatsApp Group Button Text', field_type: 'short_text', value: 'Join Whatsapp Community Group', sort_order: 9 },
+        { name: 'whatsapp_group_url', label: 'WhatsApp Group Invite Link', field_type: 'url', value: 'https://chat.whatsapp.com/JfBplPD1MisAt0RMgrylRj', sort_order: 10 },
+        { name: 'conversion_value', label: 'Conversion Tracking Value (INR)', field_type: 'number', value: '0', sort_order: 11 },
+      ]
     }
   ],
 
@@ -336,6 +355,25 @@ const PAGE_SECTIONS = {
         { name: 'button_text', label: 'Button Text', field_type: 'short_text', value: 'APPLY NOW', sort_order: 2 },
         { name: 'enroll_url', label: 'Button URL', field_type: 'url', value: 'https://rzp.io/rzp/v8ykjCk', sort_order: 3 },
       ]
+    },
+    {
+      slug: 'thank_you',
+      name: 'Thank You Page Content',
+      type: 'cta',
+      sort_order: 13,
+      fields: [
+        { name: 'heading', label: 'Headline', field_type: 'short_text', value: 'Thank You For Purchasing', sort_order: 1 },
+        { name: 'program_title', label: 'Program Name', field_type: 'short_text', value: 'Full Stack Digital Creator Program', sort_order: 2 },
+        { name: 'journey_subtext', label: 'Journey Subtitle', field_type: 'short_text', value: 'Your Digital Creator Journey Starts Now', sort_order: 3 },
+        { name: 'inbox_note', label: 'Inbox Notice', field_type: 'long_text', value: 'Check Your Inbox! ✉️ We Have Sent Your Order Confirmation, Your Registered Email Address.', sort_order: 4 },
+        { name: 'activation_note', label: 'Working Hours & Activation Note', field_type: 'long_text', value: 'In Case Your Course Access Is Not Activated Instantly After Purchase, Kindly Note That It Will Be Activated Within Our Working Hours, Between 10:00 AM To 7:00 PM.', sort_order: 5 },
+        { name: 'course_access_btn_text', label: 'Course Access Button Text', field_type: 'short_text', value: 'I Need Course Access', sort_order: 6 },
+        { name: 'course_access_phone', label: 'Course Access WhatsApp Number', field_type: 'short_text', value: '+91 82205 11273', sort_order: 7 },
+        { name: 'course_access_btn_url', label: 'Course Access Custom Link (Optional)', field_type: 'url', value: '', sort_order: 8 },
+        { name: 'whatsapp_group_btn_text', label: 'WhatsApp Group Button Text', field_type: 'short_text', value: 'Join Whatsapp Community Group', sort_order: 9 },
+        { name: 'whatsapp_group_url', label: 'WhatsApp Group Invite Link', field_type: 'url', value: 'https://chat.whatsapp.com/JfBplPD1MisAt0RMgrylRj', sort_order: 10 },
+        { name: 'conversion_value', label: 'Conversion Tracking Value (INR)', field_type: 'number', value: '0', sort_order: 11 },
+      ]
     }
   ],
 
@@ -448,6 +486,25 @@ const PAGE_SECTIONS = {
         { name: 'notice_text', label: 'Notice Text', field_type: 'short_text', value: 'Live Workshop at ₹99 Only', sort_order: 1 },
         { name: 'button_text', label: 'Button Text', field_type: 'short_text', value: 'REGISTER NOW', sort_order: 2 },
         { name: 'cta_url', label: 'Button URL', field_type: 'url', value: 'https://rzp.io/rzp/e9OpaQTo', sort_order: 3 },
+      ]
+    },
+    {
+      slug: 'thank_you',
+      name: 'Thank You Page Content',
+      type: 'cta',
+      sort_order: 9,
+      fields: [
+        { name: 'heading', label: 'Headline', field_type: 'short_text', value: 'Thank You For Purchasing', sort_order: 1 },
+        { name: 'program_title', label: 'Program Name', field_type: 'short_text', value: '3 Hours Live Workshop', sort_order: 2 },
+        { name: 'journey_subtext', label: 'Journey Subtitle', field_type: 'short_text', value: 'Your Graphic Design & Printing Business Journey Starts Now', sort_order: 3 },
+        { name: 'inbox_note', label: 'Inbox Notice', field_type: 'long_text', value: 'Check Your Inbox! ✉️ We Have Sent Your Order Confirmation, Your Registered Email Address.', sort_order: 4 },
+        { name: 'activation_note', label: 'Working Hours & Activation Note', field_type: 'long_text', value: 'In Case Your Course Access Is Not Activated Instantly After Purchase, Kindly Note That It Will Be Activated Within Our Working Hours, Between 10:00 AM To 7:00 PM.', sort_order: 5 },
+        { name: 'course_access_btn_text', label: 'Course Access Button Text', field_type: 'short_text', value: 'I Need Course Access', sort_order: 6 },
+        { name: 'course_access_phone', label: 'Course Access WhatsApp Number', field_type: 'short_text', value: '+91 82205 11273', sort_order: 7 },
+        { name: 'course_access_btn_url', label: 'Course Access Custom Link (Optional)', field_type: 'url', value: '', sort_order: 8 },
+        { name: 'whatsapp_group_btn_text', label: 'WhatsApp Group Button Text', field_type: 'short_text', value: 'Join Whatsapp Community Group', sort_order: 9 },
+        { name: 'whatsapp_group_url', label: 'WhatsApp Group Invite Link', field_type: 'url', value: 'https://chat.whatsapp.com/JfBplPD1MisAt0RMgrylRj', sort_order: 10 },
+        { name: 'conversion_value', label: 'Conversion Tracking Value (INR)', field_type: 'number', value: '99', sort_order: 11 },
       ]
     }
   ]
