@@ -61,6 +61,30 @@ const ALL_PAGES = [
     description: 'Contact information, office location, and inquiries.',
     sort_order: 8,
   },
+  {
+    slug: 'thank-you/90-days-graphic-design',
+    title: 'Thank You — 90-Day Graphic Design',
+    description: 'Post-payment confirmation & WhatsApp onboarding for 90-Day Graphic Design Mastery.',
+    sort_order: 9,
+  },
+  {
+    slug: 'thank-you/full-stack-creator',
+    title: 'Thank You — Full Stack Creator',
+    description: 'Post-payment confirmation & WhatsApp onboarding for Full Stack Digital Creator.',
+    sort_order: 10,
+  },
+  {
+    slug: 'thank-you/3-hours-live-workshop',
+    title: 'Thank You — 3 Hours Live Workshop',
+    description: 'Post-payment confirmation & WhatsApp onboarding for 3 Hours Live Workshop.',
+    sort_order: 11,
+  },
+  {
+    slug: 'thank-you',
+    title: 'Thank You — General / Fallback',
+    description: 'Default post-purchase thank you & onboarding confirmation page.',
+    sort_order: 12,
+  },
 ];
 
 const PAGE_SECTIONS = {
