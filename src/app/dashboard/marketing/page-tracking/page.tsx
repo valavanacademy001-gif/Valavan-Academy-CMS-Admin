@@ -10,19 +10,27 @@ export default async function PageTrackingPage() {
   if (page) {
     const { data: sec } = await supabase.from('sections').select('id').eq('page_id', page.id).eq('slug', 'tracking_analytics').maybeSingle()
     if (sec) {
-      const { data: fieldVal } = await supabase
-        .from('field_values')
-        .select('*, field:fields(name)')
+      const { data: field } = await supabase
+        .from('fields')
+        .select('id')
         .eq('section_id', sec.id)
-        .eq('field.name', 'page_tracking_data')
+        .eq('name', 'page_tracking_data')
         .maybeSingle()
 
-      if (fieldVal) {
-        try {
-          const raw = fieldVal.published_value_text || fieldVal.value_text
-          if (raw) initialRules = JSON.parse(raw)
-        } catch (e) {
-          console.error('Error parsing page tracking data', e)
+      if (field) {
+        const { data: fieldVal } = await supabase
+          .from('field_values')
+          .select('*')
+          .eq('field_id', field.id)
+          .maybeSingle()
+
+        if (fieldVal) {
+          try {
+            const raw = fieldVal.published_value_text || fieldVal.value_text
+            if (raw) initialRules = JSON.parse(raw)
+          } catch (e) {
+            console.error('Error parsing page tracking data', e)
+          }
         }
       }
     }

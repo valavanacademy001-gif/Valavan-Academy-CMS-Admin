@@ -132,17 +132,24 @@ export default function PageTrackingManagerClient({ initialRules }: { initialRul
       const { data: existingVal } = await supabase.from('field_values').select('id').eq('field_id', field.id).maybeSingle()
 
       if (existingVal) {
-        await supabase.from('field_values').update({
+        const { error: updErr } = await supabase.from('field_values').update({
           value_text: jsonStr,
           published_value_text: jsonStr,
+          is_draft: false,
+          updated_at: new Date().toISOString(),
         }).eq('id', existingVal.id)
+        if (updErr) console.error('Error updating page_tracking_data:', updErr)
       } else {
-        await supabase.from('field_values').insert({
+        const { error: insErr } = await supabase.from('field_values').insert({
           section_id: sec.id,
           field_id: field.id,
+          page_id: page.id,
           value_text: jsonStr,
           published_value_text: jsonStr,
+          is_draft: false,
+          updated_at: new Date().toISOString(),
         })
+        if (insErr) console.error('Error inserting page_tracking_data:', insErr)
       }
     } catch (e: any) {
       console.warn('Page tracking sync notice:', e.message)

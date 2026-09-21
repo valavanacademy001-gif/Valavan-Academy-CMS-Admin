@@ -96,22 +96,29 @@ export default function TrackingAnalyticsClient({ initialFields }: TrackingAnaly
           const val = formData[field.name]
           const { data: existingVal } = await supabase.from('field_values').select('id').eq('field_id', field.id).maybeSingle()
           if (existingVal) {
-            await supabase.from('field_values').update({
+            const { error: updErr } = await supabase.from('field_values').update({
               value_text: val,
               published_value_text: val,
+              is_draft: false,
+              updated_at: new Date().toISOString(),
             }).eq('id', existingVal.id)
+            if (updErr) console.error(`Error saving ${field.name}:`, updErr)
           } else {
-            await supabase.from('field_values').insert({
+            const { error: insErr } = await supabase.from('field_values').insert({
               section_id: sec.id,
               field_id: field.id,
+              page_id: page.id,
               value_text: val,
               published_value_text: val,
+              is_draft: false,
+              updated_at: new Date().toISOString(),
             })
+            if (insErr) console.error(`Error inserting ${field.name}:`, insErr)
           }
         }
       }
 
-      toast.success('✓ Tracking settings & pixels saved and published!')
+      toast.success('✓ Tracking settings & pixels saved permanently in database!')
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error'
       toast.error(`Save failed: ${message}`)
