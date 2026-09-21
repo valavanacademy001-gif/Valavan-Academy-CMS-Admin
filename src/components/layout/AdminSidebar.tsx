@@ -21,6 +21,7 @@ const websiteItems = [
 const marketingItems = [
   { label: 'Tracking & Pixels', href: '/dashboard/marketing/tracking', icon: BarChart3, badge: 'Active' },
   { label: 'Page Tracking Manager', href: '/dashboard/marketing/page-tracking', icon: Layers, badge: 'New' },
+  { label: 'Session Recordings', href: '/dashboard/marketing/recordings', icon: Video, badge: 'Clarity' },
   { label: 'Leads & Attribution', href: '/dashboard/marketing/leads', icon: Users },
   { label: 'Funnels & Goals', href: '/dashboard/marketing/funnels', icon: Target },
   { label: 'Live Event Stream', href: '/dashboard/marketing/events', icon: Activity },
