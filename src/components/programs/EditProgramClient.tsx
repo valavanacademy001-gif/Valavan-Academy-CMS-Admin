@@ -15,8 +15,30 @@ type ProgramData = {
   cta_text: string | null; cta_url: string | null; thumbnail_url: string | null;
   banner_url: string | null; status: string; is_visible: boolean | null;
   is_featured: boolean | null; seo_title: string | null; seo_description: string | null;
+  software_tools?: string[] | null;
   [key: string]: unknown
 }
+
+export const TOOL_PRESETS = [
+  { name: 'Photoshop', image: '/assets/tools/ps.png', category: 'Graphic Design' },
+  { name: 'Illustrator', image: '/assets/tools/illustrator.png', category: 'Graphic Design' },
+  { name: 'Canva', image: '/assets/tools/canva.png', category: 'Graphic Design' },
+  { name: 'CorelDraw', image: '/assets/tools/coreldraw.png', category: 'Graphic Design' },
+  { name: 'InDesign', image: '/assets/tools/indesign.png', category: 'Graphic Design' },
+  { name: 'Color Palette', image: '/assets/tools/color wheel.png', category: 'Design' },
+  { name: 'Premiere Pro', image: '/assets/tools/premiere-pro.png', category: 'Video Editing' },
+  { name: 'After Effects', image: '/assets/tools/after-effects.png', category: 'Video Editing' },
+  { name: 'Media Encoder', image: '/assets/tools/media-encoder.png', category: 'Video Editing' },
+  { name: 'Adobe Podcast', image: '/assets/tools/adobe-podcast.png', category: 'Audio' },
+  { name: 'WordPress', image: '/assets/tools/wordpress.png', category: 'Web' },
+  { name: 'Elementor Pro', image: '/assets/tools/elementor-pro.png', category: 'Web' },
+  { name: 'WooCommerce', image: '/assets/tools/woocommerce.png', category: 'Web' },
+  { name: 'Rank Math', image: '/assets/tools/rank-math.png', category: 'SEO' },
+  { name: 'WP Rocket', image: '/assets/tools/wp-rocket.png', category: 'Web' },
+  { name: 'ChatGPT', image: '/assets/tools/chatgpt.png', category: 'AI Tools' },
+  { name: 'Gemini AI', image: '/assets/tools/gemini-ai.png', category: 'AI Tools' },
+  { name: 'HeyGen', image: '/assets/tools/heygen.png', category: 'AI Tools' },
+]
 
 export default function EditProgramClient({ program: initialProgram }: { program: ProgramData }) {
   const router = useRouter()
@@ -25,6 +47,7 @@ export default function EditProgramClient({ program: initialProgram }: { program
   const [publishing, setPublishing] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [showMediaPicker, setShowMediaPicker] = useState(false)
+  const [customToolInput, setCustomToolInput] = useState('')
   const [form, setForm] = useState({
     title: program.title,
     slug: program.slug,
@@ -41,7 +64,37 @@ export default function EditProgramClient({ program: initialProgram }: { program
     is_featured: program.is_featured ?? false,
     seo_title: program.seo_title ?? '',
     seo_description: program.seo_description ?? '',
+    software_tools: Array.isArray(program.software_tools) ? (program.software_tools as string[]) : [],
   })
+
+  const toggleTool = (toolName: string) => {
+    setForm((p) => {
+      const exists = p.software_tools.includes(toolName)
+      return {
+        ...p,
+        software_tools: exists
+          ? p.software_tools.filter((t) => t !== toolName)
+          : [...p.software_tools, toolName],
+      }
+    })
+  }
+
+  const addCustomTool = (e: React.FormEvent) => {
+    e.preventDefault()
+    const trimmed = customToolInput.trim()
+    if (!trimmed) return
+    if (!form.software_tools.includes(trimmed)) {
+      setForm((p) => ({ ...p, software_tools: [...p.software_tools, trimmed] }))
+    }
+    setCustomToolInput('')
+  }
+
+  const removeTool = (toolName: string) => {
+    setForm((p) => ({
+      ...p,
+      software_tools: p.software_tools.filter((t) => t !== toolName),
+    }))
+  }
 
   const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
@@ -68,6 +121,7 @@ export default function EditProgramClient({ program: initialProgram }: { program
         is_featured: form.is_featured,
         seo_title: form.seo_title || null,
         seo_description: form.seo_description || null,
+        software_tools: form.software_tools,
         updated_by: user?.id,
       })
       .eq('id', program.id)
@@ -274,6 +328,136 @@ export default function EditProgramClient({ program: initialProgram }: { program
               <label className="label">CTA URL</label>
               <input type="text" value={form.cta_url} onChange={(e) => setForm((p) => ({ ...p, cta_url: e.target.value }))} className="input" />
             </div>
+          </div>
+        </div>
+
+        {/* ── Tools Mastered (Software & AI Tools) ── */}
+        <div className="card p-6 space-y-5">
+          <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+            <div>
+              <h2 className="text-sm font-semibold text-gray-800">Tools Mastered (Software & AI)</h2>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Manage the tools and logos displayed under &quot;TOOLS MASTERED&quot; on the program card.
+              </p>
+            </div>
+            <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
+              {form.software_tools.length} Tools Selected
+            </span>
+          </div>
+
+          {/* Active Tools List */}
+          <div>
+            <label className="label mb-2">Active Tools for this Program</label>
+            {form.software_tools.length > 0 ? (
+              <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                {form.software_tools.map((toolName, idx) => {
+                  const preset = TOOL_PRESETS.find(
+                    (p) => p.name.toLowerCase() === toolName.toLowerCase()
+                  )
+                  return (
+                    <div
+                      key={idx}
+                      className="inline-flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-gray-300 shadow-2xs group hover:border-red-300 transition-colors"
+                    >
+                      {preset?.image ? (
+                        <img
+                          src={preset.image}
+                          alt={toolName}
+                          className="w-5 h-5 object-contain shrink-0"
+                          onError={(e) => {
+                            const target = e.currentTarget
+                            if (!target.src.startsWith('http://localhost:3000') && preset.image.startsWith('/')) {
+                              target.src = `http://localhost:3000${preset.image}`
+                            }
+                          }}
+                        />
+                      ) : (
+                        <div className="w-5 h-5 rounded bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold">
+                          {toolName.slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                      <span className="text-xs font-semibold text-gray-800">{toolName}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeTool(toolName)}
+                        className="text-gray-400 hover:text-red-600 p-0.5 rounded transition-colors"
+                        title="Remove tool"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="p-4 text-center bg-gray-50 rounded-xl border border-dashed border-gray-300 text-gray-400 text-xs">
+                No tools selected. Click on any preset below to add tools.
+              </div>
+            )}
+          </div>
+
+          {/* Quick Preset Library */}
+          <div>
+            <label className="label mb-2">Quick Tool Presets (Click to Add / Remove)</label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+              {TOOL_PRESETS.map((preset) => {
+                const isSelected = form.software_tools.some(
+                  (t) => t.toLowerCase() === preset.name.toLowerCase()
+                )
+                return (
+                  <button
+                    key={preset.name}
+                    type="button"
+                    onClick={() => toggleTool(preset.name)}
+                    className={`flex items-center gap-2.5 p-2 rounded-xl border text-left transition-all text-xs font-medium cursor-pointer ${
+                      isSelected
+                        ? 'bg-blue-50 border-[#1748BB] text-[#1748BB] shadow-xs font-semibold'
+                        : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="w-6 h-6 rounded bg-gray-50 p-0.5 shrink-0 flex items-center justify-center">
+                      <img
+                        src={preset.image}
+                        alt={preset.name}
+                        className="w-full h-full object-contain"
+                        onError={(e) => {
+                          const target = e.currentTarget
+                          if (!target.src.startsWith('http://localhost:3000') && preset.image.startsWith('/')) {
+                            target.src = `http://localhost:3000${preset.image}`
+                          }
+                        }}
+                      />
+                    </div>
+                    <span className="truncate flex-1">{preset.name}</span>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${
+                        isSelected ? 'bg-[#1748BB] text-white' : 'bg-gray-100 text-gray-500'
+                      }`}
+                    >
+                      {isSelected ? '✓' : '+'}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Add Custom Tool */}
+          <div className="pt-2 border-t border-gray-100 flex gap-2 items-center">
+            <input
+              type="text"
+              value={customToolInput}
+              onChange={(e) => setCustomToolInput(e.target.value)}
+              placeholder="Add custom software/tool name (e.g. Figma, DaVinci Resolve)..."
+              className="input text-xs flex-1"
+            />
+            <button
+              type="button"
+              onClick={addCustomTool}
+              className="btn-secondary py-2 px-4 text-xs font-semibold shrink-0"
+            >
+              + Add Tool
+            </button>
           </div>
         </div>
 
