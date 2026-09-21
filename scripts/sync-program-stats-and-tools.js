@@ -37,14 +37,26 @@ async function runSync() {
     // 1. HERO SECTION FIELDS
     const { data: heroSec } = await supabase.from('sections').select('id').eq('page_id', page.id).eq('slug', 'hero').single();
     if (heroSec) {
-      const heroFields = [
+      const heroFields = pageSlug === 'full-stack-creator' ? [
+        { name: 'enroll_btn_text', label: 'Primary Button Text', field_type: 'short_text', val: '🚀 Join The Program', sort_order: 10 },
+        { name: 'enroll_url', label: 'Primary Button URL', field_type: 'url', val: 'https://learn.valavanacademy.com/clientapp/signup', sort_order: 11 },
+        { name: 'secondary_btn_text', label: 'Secondary Button Text', field_type: 'short_text', val: '📖 View Curriculum', sort_order: 12 },
+        { name: 'secondary_btn_url', label: 'Secondary Button URL (e.g. #syllabus)', field_type: 'short_text', val: '#syllabus', sort_order: 13 },
+        { name: 'stat_students', label: 'Stat: Students Trained', field_type: 'short_text', val: '10,000+ Students', sort_order: 20 },
+        { name: 'stat_skills', label: 'Stat: Core Skill Areas', field_type: 'short_text', val: '6 Core Skill Areas', sort_order: 21 },
+        { name: 'stat_projects', label: 'Stat: Portfolio Projects', field_type: 'short_text', val: '6 Core Skill Areas', sort_order: 22 },
+        { name: 'stat_lessons', label: 'Stat: Learning Lessons', field_type: 'short_text', val: '200+ Lessons', sort_order: 23 },
+        { name: 'stat_access', label: 'Stat: Lifetime Access', field_type: 'short_text', val: 'Lifetime Access', sort_order: 24 },
+        { name: 'stat_ai', label: 'Stat: AI Learning', field_type: 'short_text', val: 'AI Integrated Learning', sort_order: 25 },
+        { name: 'stat_guidance', label: 'Stat: Expert Guidance', field_type: 'short_text', val: 'AI Integrated Learning', sort_order: 26 },
+      ] : [
         { name: 'enroll_btn_text', label: 'Primary Button Text', field_type: 'short_text', val: 'Enroll Now', sort_order: 10 },
         { name: 'enroll_url', label: 'Primary Button URL', field_type: 'url', val: 'https://learn.valavanacademy.com/clientapp/signup', sort_order: 11 },
         { name: 'secondary_btn_text', label: 'Secondary Button Text', field_type: 'short_text', val: 'View Curriculum', sort_order: 12 },
         { name: 'secondary_btn_url', label: 'Secondary Button URL (e.g. #roadmap)', field_type: 'short_text', val: '#roadmap', sort_order: 13 },
-        { name: 'stat_students', label: 'Stat: Students Trained', field_type: 'short_text', val: '10,000+ Students Trained', sort_order: 20 },
-        { name: 'stat_projects', label: 'Stat: Portfolio Projects', field_type: 'short_text', val: pageSlug === 'full-stack-creator' ? '25+ Portfolio Projects' : '20+ Portfolio Projects', sort_order: 21 },
-        { name: 'stat_lessons', label: 'Stat: Learning Lessons', field_type: 'short_text', val: '150+ Learning Lessons', sort_order: 22 },
+        { name: 'stat_students', label: 'Stat: Students Trained', field_type: 'short_text', val: '10,000+ Students', sort_order: 20 },
+        { name: 'stat_projects', label: 'Stat: Portfolio Projects', field_type: 'short_text', val: '20+ Projects', sort_order: 21 },
+        { name: 'stat_lessons', label: 'Stat: Learning Lessons', field_type: 'short_text', val: '150+ Lessons', sort_order: 22 },
         { name: 'stat_access', label: 'Stat: Lifetime Access', field_type: 'short_text', val: 'Lifetime Access', sort_order: 23 },
         { name: 'stat_guidance', label: 'Stat: Expert Guidance', field_type: 'short_text', val: 'Expert Guidance', sort_order: 24 },
       ];
