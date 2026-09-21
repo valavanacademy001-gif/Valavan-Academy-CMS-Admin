@@ -81,7 +81,7 @@ const PAGE_SECTIONS = {
         { name: 'highlight_level', label: 'Level Text', field_type: 'short_text', value: 'Beginner to Pro', sort_order: 7 },
         { name: 'highlight_projects', label: 'Projects Stat', field_type: 'short_text', value: '10+ Live Projects', sort_order: 8 },
         { name: 'hero_image', label: 'Hero Image', field_type: 'image', value: '/assets/images/hero/ai-powered-GD.webp', sort_order: 9 },
-        { name: 'enroll_url', label: 'Enroll Button URL', field_type: 'url', value: 'https://learn.valavanacademy.com/clientapp/signup', sort_order: 10 },
+        { name: 'enroll_url', label: 'Enroll Button URL', field_type: 'url', value: 'https://rzp.io/rzp/4ydecO7', sort_order: 10 },
         { name: 'community_url', label: 'Community Button URL', field_type: 'url', value: 'https://tamilnaducreatorsclub.com/', sort_order: 11 },
       ]
     },
@@ -157,7 +157,7 @@ const PAGE_SECTIONS = {
         { name: 'title_highlight', label: 'Headline Highlight (Blue)', field_type: 'short_text', value: 'Today.', sort_order: 3 },
         { name: 'duration_text', label: 'Duration Text', field_type: 'short_text', value: '90 Days', sort_order: 4 },
         { name: 'seats_text', label: 'Seats Text', field_type: 'short_text', value: '20 Seats Available', sort_order: 5 },
-        { name: 'enroll_url', label: 'Enroll Button URL', field_type: 'url', value: 'https://learn.valavanacademy.com/clientapp/signup', sort_order: 6 },
+        { name: 'enroll_url', label: 'Enroll Button URL', field_type: 'url', value: 'https://rzp.io/rzp/4ydecO7', sort_order: 6 },
       ]
     },
     {
@@ -180,7 +180,7 @@ const PAGE_SECTIONS = {
       fields: [
         { name: 'notice_text', label: 'Notice Text', field_type: 'short_text', value: 'Limited Seats Only', sort_order: 1 },
         { name: 'button_text', label: 'Button Text', field_type: 'short_text', value: 'ENROLL NOW', sort_order: 2 },
-        { name: 'enroll_url', label: 'Button URL', field_type: 'url', value: 'https://learn.valavanacademy.com/clientapp/signup', sort_order: 3 },
+        { name: 'enroll_url', label: 'Button URL', field_type: 'url', value: 'https://rzp.io/rzp/4ydecO7', sort_order: 3 },
       ]
     }
   ],
@@ -202,7 +202,7 @@ const PAGE_SECTIONS = {
         { name: 'highlight_level', label: 'Level Text', field_type: 'short_text', value: 'Beginner to Advanced', sort_order: 7 },
         { name: 'highlight_projects', label: 'Projects Stat', field_type: 'short_text', value: '25+ Live Projects', sort_order: 8 },
         { name: 'hero_image', label: 'Hero Image', field_type: 'image', value: '/assets/images/hero/full-stack-.jpg-1.webp', sort_order: 9 },
-        { name: 'enroll_url', label: 'Enroll Button URL', field_type: 'url', value: 'https://learn.valavanacademy.com/clientapp/signup', sort_order: 10 },
+        { name: 'enroll_url', label: 'Enroll Button URL', field_type: 'url', value: 'https://rzp.io/rzp/v8ykjCk', sort_order: 10 },
         { name: 'community_url', label: 'Community Button URL', field_type: 'url', value: 'https://tamilnaducreatorsclub.com/', sort_order: 11 },
       ]
     },
@@ -312,7 +312,7 @@ const PAGE_SECTIONS = {
         { name: 'title_prefix', label: 'Headline Prefix', field_type: 'short_text', value: 'Transform Your Career', sort_order: 2 },
         { name: 'title_highlight', label: 'Headline Highlight (Blue)', field_type: 'short_text', value: 'Starting Today.', sort_order: 3 },
         { name: 'duration_text', label: 'Duration Text', field_type: 'short_text', value: '6 Months', sort_order: 4 },
-        { name: 'enroll_url', label: 'Enroll URL', field_type: 'url', value: 'https://learn.valavanacademy.com/clientapp/signup', sort_order: 5 },
+        { name: 'enroll_url', label: 'Enroll URL', field_type: 'url', value: 'https://rzp.io/rzp/v8ykjCk', sort_order: 5 },
       ]
     },
     {
@@ -334,7 +334,7 @@ const PAGE_SECTIONS = {
       fields: [
         { name: 'notice_text', label: 'Notice Text', field_type: 'short_text', value: 'Next Cohort Starting Soon', sort_order: 1 },
         { name: 'button_text', label: 'Button Text', field_type: 'short_text', value: 'APPLY NOW', sort_order: 2 },
-        { name: 'enroll_url', label: 'Button URL', field_type: 'url', value: 'https://learn.valavanacademy.com/clientapp/signup', sort_order: 3 },
+        { name: 'enroll_url', label: 'Button URL', field_type: 'url', value: 'https://rzp.io/rzp/v8ykjCk', sort_order: 3 },
       ]
     }
   ],
@@ -353,7 +353,7 @@ const PAGE_SECTIONS = {
         { name: 'description', label: 'Description', field_type: 'long_text', value: 'Start your Graphic Design journey and learn how designers build profitable businesses in Tamil by Mr. Valavan.', sort_order: 4 },
         { name: 'price_text', label: 'Price Text', field_type: 'short_text', value: '₹99 (Regular ₹999)', sort_order: 5 },
         { name: 'date_text', label: 'Date & Time Text', field_type: 'short_text', value: 'Upcoming Sunday · 10:00 AM IST', sort_order: 6 },
-        { name: 'enroll_url', label: 'Enroll URL', field_type: 'url', value: 'https://learn.valavanacademy.com/clientapp/signup', sort_order: 7 },
+        { name: 'enroll_url', label: 'Enroll URL', field_type: 'url', value: 'https://rzp.io/rzp/e9OpaQTo', sort_order: 7 },
       ]
     },
     {
@@ -425,7 +425,7 @@ const PAGE_SECTIONS = {
         { name: 'title_highlight', label: 'Headline Highlight (Blue)', field_type: 'short_text', value: '₹99 Only.', sort_order: 3 },
         { name: 'price_current', label: 'Current Price', field_type: 'short_text', value: '₹99', sort_order: 4 },
         { name: 'price_original', label: 'Original Price', field_type: 'short_text', value: '₹999', sort_order: 5 },
-        { name: 'cta_url', label: 'Registration URL', field_type: 'url', value: 'https://learn.valavanacademy.com/clientapp/signup', sort_order: 6 },
+        { name: 'cta_url', label: 'Registration URL', field_type: 'url', value: 'https://rzp.io/rzp/e9OpaQTo', sort_order: 6 },
       ]
     },
     {
@@ -447,7 +447,7 @@ const PAGE_SECTIONS = {
       fields: [
         { name: 'notice_text', label: 'Notice Text', field_type: 'short_text', value: 'Live Workshop at ₹99 Only', sort_order: 1 },
         { name: 'button_text', label: 'Button Text', field_type: 'short_text', value: 'REGISTER NOW', sort_order: 2 },
-        { name: 'cta_url', label: 'Button URL', field_type: 'url', value: 'https://learn.valavanacademy.com/clientapp/signup', sort_order: 3 },
+        { name: 'cta_url', label: 'Button URL', field_type: 'url', value: 'https://rzp.io/rzp/e9OpaQTo', sort_order: 3 },
       ]
     }
   ]

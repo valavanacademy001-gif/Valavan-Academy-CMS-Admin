@@ -16,7 +16,7 @@ const FULLSTACK_SECTIONS = {
       { name: 'highlight_duration', label: 'Duration Text', field_type: 'short_text', val: '6 Months', sort_order: 5 },
       { name: 'hero_image', label: 'Hero Image', field_type: 'image', val: '/assets/images/hero/full-stack-.jpg-1.webp', sort_order: 6 },
       { name: 'enroll_btn_text', label: 'Primary Button Text', field_type: 'short_text', val: '🚀 Join The Program', sort_order: 10 },
-      { name: 'enroll_url', label: 'Primary Button URL', field_type: 'url', val: 'https://learn.valavanacademy.com/clientapp/signup', sort_order: 11 },
+      { name: 'enroll_url', label: 'Primary Button URL', field_type: 'url', val: 'https://rzp.io/rzp/v8ykjCk', sort_order: 11 },
       { name: 'secondary_btn_text', label: 'Secondary Button Text', field_type: 'short_text', val: '📖 View Curriculum', sort_order: 12 },
       { name: 'secondary_btn_url', label: 'Secondary Button URL (e.g. #syllabus)', field_type: 'short_text', val: '#syllabus', sort_order: 13 },
       { name: 'stat_students', label: 'Stat: Students Trained', field_type: 'short_text', val: '10,000+ Students', sort_order: 20 },
@@ -79,7 +79,7 @@ const FULLSTACK_SECTIONS = {
       { name: 'program_title', label: 'Program Certificate Title', field_type: 'short_text', val: 'Earn a Professional Certification in Full Stack Digital Creator Program', sort_order: 5 },
       { name: 'program_description', label: 'Program Description', field_type: 'long_text', val: 'Build credibility for freelancing, portfolio & job opportunities with recognized project-based learning', sort_order: 6 },
       { name: 'certificate_image', label: 'Certificate Image Mockup', field_type: 'image', val: '/assets/programs/full-stack-creator/CERTIFICATE-model-2.jpg-1-2048x1448.webp', sort_order: 7 },
-      { name: 'enroll_url', label: 'Button URL', field_type: 'url', val: 'https://learn.valavanacademy.com/clientapp/signup', sort_order: 8 },
+      { name: 'enroll_url', label: 'Button URL', field_type: 'url', val: 'https://rzp.io/rzp/v8ykjCk', sort_order: 8 },
     ]
   },
   creator_economy: {
@@ -120,7 +120,7 @@ const FULLSTACK_SECTIONS = {
       { name: 'feature_8', label: 'Feature 8', field_type: 'short_text', val: 'Future Updates', sort_order: 17 },
       { name: 'image', label: 'Asset Vault Mockup Image', field_type: 'image', val: '/assets/programs/full-stack-creator/Untitled-design-3-1-1-2048x1152-1-1024x576.webp', sort_order: 20 },
       { name: 'button_text', label: 'Button Text', field_type: 'short_text', val: '🚀 Join Full Stack Creator Program', sort_order: 21 },
-      { name: 'enroll_url', label: 'Button URL', field_type: 'url', val: 'https://learn.valavanacademy.com/clientapp/signup', sort_order: 22 },
+      { name: 'enroll_url', label: 'Button URL', field_type: 'url', val: 'https://rzp.io/rzp/v8ykjCk', sort_order: 22 },
     ]
   },
   who_is_this_for: {
@@ -140,7 +140,7 @@ const FULLSTACK_SECTIONS = {
       { name: 'persona_5_title', label: 'Persona 5 Title', field_type: 'short_text', val: 'Job Seeker', sort_order: 18 },
       { name: 'persona_5_desc', label: 'Persona 5 Description', field_type: 'long_text', val: 'To Work a Creative Field and needs step-by-step, practical guidance', sort_order: 19 },
       { name: 'button_text', label: 'Button Text', field_type: 'short_text', val: 'Enroll Now', sort_order: 30 },
-      { name: 'enroll_url', label: 'Button URL', field_type: 'url', val: 'https://learn.valavanacademy.com/clientapp/signup', sort_order: 31 },
+      { name: 'enroll_url', label: 'Button URL', field_type: 'url', val: 'https://rzp.io/rzp/v8ykjCk', sort_order: 31 },
     ]
   },
   guidance_mentors: {
@@ -179,7 +179,7 @@ const FULLSTACK_SECTIONS = {
       { name: 'card_badge', label: 'Card Badge Text', field_type: 'short_text', val: 'Lifetime Access', sort_order: 21 },
       { name: 'button_text', label: 'Button Text', field_type: 'short_text', val: 'Join Today', sort_order: 22 },
       { name: 'card_note', label: 'Card Sub-Note', field_type: 'short_text', val: 'For A Limited Time Only', sort_order: 23 },
-      { name: 'enroll_url', label: 'Enroll Button URL', field_type: 'url', val: 'https://learn.valavanacademy.com/clientapp/signup', sort_order: 24 },
+      { name: 'enroll_url', label: 'Enroll Button URL', field_type: 'url', val: 'https://rzp.io/rzp/v8ykjCk', sort_order: 24 },
     ]
   },
   final_cta: {
@@ -191,7 +191,7 @@ const FULLSTACK_SECTIONS = {
       { name: 'headline_sub', label: 'Sub-Headline', field_type: 'long_text', val: 'The people who can design, communicate, create content, use AI, and build audiences will have more opportunities than ever before.', sort_order: 4 },
       { name: 'description', label: 'Description', field_type: 'long_text', val: 'Start building those skills today.', sort_order: 5 },
       { name: 'primary_btn_text', label: 'Primary CTA Text', field_type: 'short_text', val: '🚀 Join The Program', sort_order: 10 },
-      { name: 'primary_btn_url', label: 'Primary CTA URL', field_type: 'url', val: 'https://learn.valavanacademy.com/clientapp/signup', sort_order: 11 },
+      { name: 'primary_btn_url', label: 'Primary CTA URL', field_type: 'url', val: 'https://rzp.io/rzp/v8ykjCk', sort_order: 11 },
       { name: 'secondary_btn_text', label: 'Secondary CTA Text', field_type: 'short_text', val: '📖 Explore Curriculum', sort_order: 12 },
       { name: 'secondary_btn_url', label: 'Secondary CTA URL (e.g. #syllabus)', field_type: 'short_text', val: '#syllabus', sort_order: 13 },
       { name: 'footer_subtext', label: 'Closing Line Text', field_type: 'long_text', val: 'Build Skills. Create Opportunities. Shape Your Future. — Valavan Academy – Empowering The Next Generation Of Digital Creators. 🚀', sort_order: 14 },
@@ -223,7 +223,7 @@ const FULLSTACK_SECTIONS = {
     fields: [
       { name: 'notice_text', label: 'Notice / Urgency Text', field_type: 'short_text', val: 'Limited Seats Only', sort_order: 1 },
       { name: 'button_text', label: 'Button Text', field_type: 'short_text', val: 'ENROLL NOW', sort_order: 2 },
-      { name: 'enroll_url', label: 'Button URL', field_type: 'url', val: 'https://learn.valavanacademy.com/clientapp/signup', sort_order: 3 },
+      { name: 'enroll_url', label: 'Button URL', field_type: 'url', val: 'https://rzp.io/rzp/v8ykjCk', sort_order: 3 },
     ]
   }
 };
