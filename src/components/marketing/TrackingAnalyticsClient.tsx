@@ -120,22 +120,30 @@ export default function TrackingAnalyticsClient({ initialFields }: TrackingAnaly
     }
   }
 
-  // Multiplier based on selected date range for dynamic metric display
-  const multiplier = dateRange === 'today' ? 0.25 : dateRange === 'yesterday' ? 0.22 : dateRange === '7days' ? 1 : dateRange === '30days' ? 3.8 : 10.5
+  // Check if any tracking provider is currently enabled
+  const hasConnectedIntegrations = Boolean(
+    (formData.ga4_enabled === 'true' && formData.ga4_measurement_id?.trim()) ||
+    (formData.meta_pixel_enabled === 'true' && formData.meta_pixel_id?.trim()) ||
+    (formData.clarity_enabled === 'true' && formData.clarity_project_id?.trim()) ||
+    (formData.gtm_enabled === 'true' && formData.gtm_container_id?.trim()) ||
+    (formData.linkedin_enabled === 'true' && formData.linkedin_partner_id?.trim()) ||
+    (formData.tiktok_enabled === 'true' && formData.tiktok_pixel_id?.trim())
+  )
 
+  // Real data metrics - default strictly to 0 and 'Not Available' when no data exists
   const metrics = {
-    visitorsToday: 184,
-    visitorsThisWeek: Math.round(1420 * (multiplier / 1)),
-    visitorsThisMonth: Math.round(5680 * (multiplier / 1)),
-    totalVisitors: Math.round(18420 + 350 * multiplier),
-    uniqueVisitors: Math.round(12340 * (multiplier / 1)),
-    pageViews: Math.round(41200 * (multiplier / 1)),
-    leadsGenerated: Math.round(68 * multiplier),
-    whatsAppClicks: Math.round(142 * multiplier),
-    formSubmissions: Math.round(47 * multiplier),
-    conversionRate: '4.82%',
-    topSource: 'Instagram Ads (54%)',
-    topLandingPage: '/programs/90-days-graphic-design (48%)'
+    visitorsToday: 0,
+    visitorsThisWeek: 0,
+    totalVisitors: 0,
+    uniqueVisitors: 0,
+    pageViews: 0,
+    leadsGenerated: 0,
+    whatsAppClicks: 0,
+    formSubmissions: 0,
+    conversionRate: '0%',
+    avgSessionTime: '0s',
+    topSource: 'Not Available',
+    topLandingPage: 'Not Available',
   }
 
   return (
@@ -150,9 +158,11 @@ export default function TrackingAnalyticsClient({ initialFields }: TrackingAnaly
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl font-bold text-gray-900 leading-tight">Tracking & Analytics System</h1>
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 uppercase tracking-wider">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                  Live Engine
+                <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                  hasConnectedIntegrations ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${hasConnectedIntegrations ? 'bg-emerald-600 animate-pulse' : 'bg-gray-400'}`} />
+                  {hasConnectedIntegrations ? 'Live Integrations Active' : 'No Integrations Connected'}
                 </span>
               </div>
               <p className="text-xs text-gray-500">
@@ -228,21 +238,62 @@ export default function TrackingAnalyticsClient({ initialFields }: TrackingAnaly
       {/* TAB 1: ANALYTICS DASHBOARD */}
       {activeTab === 'analytics' && (
         <div className="space-y-6">
+          {/* Empty State Banner when no integrations connected */}
+          {!hasConnectedIntegrations && (
+            <div className="bg-gradient-to-r from-blue-50/90 via-indigo-50/50 to-white rounded-2xl border border-blue-200/80 p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-5">
+              <div className="space-y-1.5 max-w-2xl">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+                  <h3 className="text-base font-bold text-gray-900">No Analytics Data Available</h3>
+                </div>
+                <p className="text-xs text-gray-600 leading-relaxed">
+                  Connect Google Analytics, Meta Pixel or Microsoft Clarity to start collecting data and tracking website visitors in real-time.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('pixels')}
+                  className="px-3.5 py-2 rounded-xl bg-[#1748BB] hover:bg-[#133c9e] text-white text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Zap className="w-3.5 h-3.5" />
+                  <span>Connect Google Analytics</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('pixels')}
+                  className="px-3.5 py-2 rounded-xl bg-cyan-700 hover:bg-cyan-800 text-white text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Zap className="w-3.5 h-3.5" />
+                  <span>Connect Microsoft Clarity</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('pixels')}
+                  className="px-3.5 py-2 rounded-xl bg-[#1877F2] hover:bg-[#125ec2] text-white text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Zap className="w-3.5 h-3.5" />
+                  <span>Connect Meta Pixel</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* 12 Key Performance Metrics Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3.5">
             {[
-              { label: 'Visitors Today', val: metrics.visitorsToday.toLocaleString(), change: '+18.4%', trend: 'up', icon: Users, color: 'text-blue-600 bg-blue-50' },
-              { label: 'Visitors This Week', val: metrics.visitorsThisWeek.toLocaleString(), change: '+24.1%', trend: 'up', icon: Globe, color: 'text-indigo-600 bg-indigo-50' },
-              { label: 'Total Visitors', val: metrics.totalVisitors.toLocaleString(), change: '+12.8%', trend: 'up', icon: Activity, color: 'text-purple-600 bg-purple-50' },
-              { label: 'Unique Visitors', val: metrics.uniqueVisitors.toLocaleString(), change: '+15.2%', trend: 'up', icon: Eye, color: 'text-cyan-600 bg-cyan-50' },
-              { label: 'Total Page Views', val: metrics.pageViews.toLocaleString(), change: '+29.0%', trend: 'up', icon: FileText, color: 'text-emerald-600 bg-emerald-50' },
-              { label: 'Leads Generated', val: metrics.leadsGenerated.toLocaleString(), change: '+32.5%', trend: 'up', icon: Sparkles, color: 'text-amber-600 bg-amber-50' },
-              { label: 'WhatsApp Clicks', val: metrics.whatsAppClicks.toLocaleString(), change: '+41.2%', trend: 'up', icon: MessageCircle, color: 'text-green-600 bg-green-50' },
-              { label: 'Form Submits', val: metrics.formSubmissions.toLocaleString(), change: '+8.4%', trend: 'up', icon: CheckCircle2, color: 'text-teal-600 bg-teal-50' },
-              { label: 'Conversion Rate', val: metrics.conversionRate, change: '+1.1%', trend: 'up', icon: TrendingUp, color: 'text-rose-600 bg-rose-50' },
-              { label: 'Avg Session Time', val: '2m 48s', change: '+14s', trend: 'up', icon: Clock, color: 'text-sky-600 bg-sky-50' },
-              { label: 'Top Traffic Source', val: 'Instagram', sub: '54% of traffic', icon: ExternalLink, color: 'text-pink-600 bg-pink-50' },
-              { label: 'Top Landing Page', val: '90-Day Graphic', sub: '48% total views', icon: Layers, color: 'text-orange-600 bg-orange-50' },
+              { label: 'Visitors Today', val: metrics.visitorsToday, icon: Users, color: 'text-blue-600 bg-blue-50' },
+              { label: 'Visitors This Week', val: metrics.visitorsThisWeek, icon: Globe, color: 'text-indigo-600 bg-indigo-50' },
+              { label: 'Total Visitors', val: metrics.totalVisitors, icon: Activity, color: 'text-purple-600 bg-purple-50' },
+              { label: 'Unique Visitors', val: metrics.uniqueVisitors, icon: Eye, color: 'text-cyan-600 bg-cyan-50' },
+              { label: 'Total Page Views', val: metrics.pageViews, icon: FileText, color: 'text-emerald-600 bg-emerald-50' },
+              { label: 'Leads Generated', val: metrics.leadsGenerated, icon: Sparkles, color: 'text-amber-600 bg-amber-50' },
+              { label: 'WhatsApp Clicks', val: metrics.whatsAppClicks, icon: MessageCircle, color: 'text-green-600 bg-green-50' },
+              { label: 'Form Submits', val: metrics.formSubmissions, icon: CheckCircle2, color: 'text-teal-600 bg-teal-50' },
+              { label: 'Conversion Rate', val: metrics.conversionRate, icon: TrendingUp, color: 'text-rose-600 bg-rose-50' },
+              { label: 'Avg Session Time', val: metrics.avgSessionTime, icon: Clock, color: 'text-sky-600 bg-sky-50' },
+              { label: 'Top Traffic Source', val: metrics.topSource, icon: ExternalLink, color: 'text-pink-600 bg-pink-50' },
+              { label: 'Top Landing Page', val: metrics.topLandingPage, icon: Layers, color: 'text-orange-600 bg-orange-50' },
             ].map((kpi) => {
               const Icon = kpi.icon
               return (
@@ -254,83 +305,34 @@ export default function TrackingAnalyticsClient({ initialFields }: TrackingAnaly
                     </div>
                   </div>
                   <div className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">{kpi.val}</div>
-                  {kpi.change && (
-                    <div className="text-[11px] font-semibold text-emerald-600 flex items-center gap-1 mt-1">
-                      <TrendingUp className="w-3 h-3" />
-                      <span>{kpi.change} vs last period</span>
-                    </div>
-                  )}
-                  {kpi.sub && (
-                    <div className="text-[11px] text-gray-400 font-medium truncate mt-1">
-                      {kpi.sub}
-                    </div>
-                  )}
                 </div>
               )
             })}
           </div>
 
-          {/* Interactive Visual Charts Grid */}
+          {/* Visual Charts Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Chart 1: Visitors Trend (SVG Area Line) */}
+            {/* Chart 1: Visitors Trend */}
             <div className="lg:col-span-8 bg-white rounded-2xl border border-gray-200 p-6 shadow-xs space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-base font-bold text-gray-900">Visitors & Traffic Trend</h3>
                   <p className="text-xs text-gray-400">Daily unique visitors and session volume</p>
                 </div>
-                <span className="text-xs font-bold text-[#1748BB] bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
-                  Total {metrics.pageViews.toLocaleString()} Views
+                <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full border border-gray-200">
+                  Total 0 Views
                 </span>
               </div>
 
-              {/* Dynamic SVG Area Chart */}
-              <div className="h-64 w-full relative pt-4">
-                <svg className="w-full h-full overflow-visible" viewBox="0 0 700 200" preserveAspectRatio="none">
-                  <defs>
-                    <linearGradient id="blueGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#1748BB" stopOpacity="0.28" />
-                      <stop offset="100%" stopColor="#1748BB" stopOpacity="0.0" />
-                    </linearGradient>
-                  </defs>
-                  {/* Grid Lines */}
-                  <line x1="0" y1="40" x2="700" y2="40" stroke="#F1F5F9" strokeWidth="1" />
-                  <line x1="0" y1="90" x2="700" y2="90" stroke="#F1F5F9" strokeWidth="1" />
-                  <line x1="0" y1="140" x2="700" y2="140" stroke="#F1F5F9" strokeWidth="1" />
-                  <line x1="0" y1="190" x2="700" y2="190" stroke="#E2E8F0" strokeWidth="1" />
-
-                  {/* Area fill */}
-                  <path
-                    d="M 0,160 Q 100,120 200,140 T 400,60 T 600,70 T 700,30 L 700,190 L 0,190 Z"
-                    fill="url(#blueGrad)"
-                  />
-                  {/* Stroke Line */}
-                  <path
-                    d="M 0,160 Q 100,120 200,140 T 400,60 T 600,70 T 700,30"
-                    fill="none"
-                    stroke="#1748BB"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                  />
-
-                  {/* Data Points */}
-                  {[
-                    { cx: 0, cy: 160, label: 'Mon' },
-                    { cx: 116, cy: 125, label: 'Tue' },
-                    { cx: 233, cy: 135, label: 'Wed' },
-                    { cx: 350, cy: 95, label: 'Thu' },
-                    { cx: 466, cy: 65, label: 'Fri' },
-                    { cx: 583, cy: 70, label: 'Sat' },
-                    { cx: 700, cy: 30, label: 'Sun' },
-                  ].map((pt, i) => (
-                    <g key={i}>
-                      <circle cx={pt.cx} cy={pt.cy} r="4.5" fill="#FFFFFF" stroke="#1748BB" strokeWidth="2.5" />
-                      <text x={pt.cx} y="198" textAnchor="middle" fill="#94A3B8" fontSize="11" fontFamily="sans-serif">
-                        {pt.label}
-                      </text>
-                    </g>
-                  ))}
-                </svg>
+              {/* Empty State for Chart 1 */}
+              <div className="h-64 w-full flex flex-col items-center justify-center text-center p-6 bg-gray-50/60 rounded-xl border border-dashed border-gray-200">
+                <div className="w-12 h-12 rounded-2xl bg-blue-50 text-[#1748BB] flex items-center justify-center mb-3">
+                  <BarChart3 className="w-6 h-6 opacity-60" />
+                </div>
+                <h4 className="text-sm font-bold text-gray-800 mb-1">No visitor data available yet</h4>
+                <p className="text-xs text-gray-500 max-w-sm">
+                  Traffic trends will appear here once visitors start browsing your website.
+                </p>
               </div>
 
               <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-100">
@@ -344,55 +346,24 @@ export default function TrackingAnalyticsClient({ initialFields }: TrackingAnaly
                     <span className="font-semibold text-gray-700">Leads Captured</span>
                   </div>
                 </div>
-                <span className="text-gray-400">Peak time: 7:00 PM – 10:30 PM IST</span>
+                <span className="text-gray-400">No active sessions</span>
               </div>
             </div>
 
-            {/* Chart 2: Traffic Sources Breakdown (Donut + Progress) */}
+            {/* Chart 2: Traffic Sources Breakdown */}
             <div className="lg:col-span-4 bg-white rounded-2xl border border-gray-200 p-6 shadow-xs space-y-4">
               <h3 className="text-base font-bold text-gray-900">Traffic Acquisition Channels</h3>
               <p className="text-xs text-gray-400">UTM campaigns & referral distribution</p>
 
-              <div className="space-y-3 pt-2">
-                {[
-                  { name: 'Instagram Ads & Reels', pct: 54, leads: 37, color: 'bg-gradient-to-r from-pink-500 to-purple-500' },
-                  { name: 'Google Ads (Search & Discovery)', pct: 22, leads: 15, color: 'bg-blue-600' },
-                  { name: 'YouTube Tamil Community', pct: 14, leads: 10, color: 'bg-red-600' },
-                  { name: 'WhatsApp Direct & Groups', pct: 6, leads: 4, color: 'bg-emerald-600' },
-                  { name: 'Direct / Organic', pct: 4, leads: 2, color: 'bg-gray-600' },
-                ].map((src) => (
-                  <div key={src.name} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-semibold text-gray-700">{src.name}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-gray-900">{src.pct}%</span>
-                        <span className="text-[10px] text-gray-400">({src.leads} leads)</span>
-                      </div>
-                    </div>
-                    <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                      <div className={`h-full rounded-full ${src.color}`} style={{ width: `${src.pct}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Device Split Summary */}
-              <div className="pt-4 border-t border-gray-100 grid grid-cols-3 gap-2 text-center">
-                <div className="p-2 rounded-xl bg-gray-50 border border-gray-100">
-                  <Smartphone className="w-4 h-4 mx-auto text-[#1748BB] mb-1" />
-                  <div className="text-xs font-bold text-gray-900">76%</div>
-                  <div className="text-[10px] text-gray-400">Mobile</div>
+              {/* Empty State for Chart 2 */}
+              <div className="h-64 w-full flex flex-col items-center justify-center text-center p-6 bg-gray-50/60 rounded-xl border border-dashed border-gray-200">
+                <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center mb-3">
+                  <Globe className="w-6 h-6 opacity-60" />
                 </div>
-                <div className="p-2 rounded-xl bg-gray-50 border border-gray-100">
-                  <Monitor className="w-4 h-4 mx-auto text-indigo-600 mb-1" />
-                  <div className="text-xs font-bold text-gray-900">21%</div>
-                  <div className="text-[10px] text-gray-400">Desktop</div>
-                </div>
-                <div className="p-2 rounded-xl bg-gray-50 border border-gray-100">
-                  <Tablet className="w-4 h-4 mx-auto text-purple-600 mb-1" />
-                  <div className="text-xs font-bold text-gray-900">3%</div>
-                  <div className="text-[10px] text-gray-400">Tablet</div>
-                </div>
+                <h4 className="text-sm font-bold text-gray-800 mb-1">No traffic source data available yet</h4>
+                <p className="text-xs text-gray-500 max-w-xs">
+                  UTM campaigns, ads, and referral channels will be tracked automatically.
+                </p>
               </div>
             </div>
           </div>
@@ -404,7 +375,7 @@ export default function TrackingAnalyticsClient({ initialFields }: TrackingAnaly
                 <h3 className="text-base font-bold text-gray-900">Page Analytics & Conversion Performance</h3>
                 <p className="text-xs text-gray-400">Metrics, bounce rate, and lead conversions per URL</p>
               </div>
-              <span className="text-xs font-semibold text-gray-500">Live Telemetry Synchronized</span>
+              <span className="text-xs font-semibold text-gray-400">Live Telemetry Ready</span>
             </div>
 
             <div className="overflow-x-auto">
@@ -421,29 +392,13 @@ export default function TrackingAnalyticsClient({ initialFields }: TrackingAnaly
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
-                  {[
-                    { path: '/programs/90-days-graphic-design', views: '19,840', unique: '6,420', time: '3m 12s', bounce: '28.4%', leads: 34, cr: '5.29%' },
-                    { path: '/programs/3-hours-live-workshop', views: '12,350', unique: '4,110', time: '2m 45s', bounce: '31.2%', leads: 22, cr: '4.85%' },
-                    { path: '/programs/full-stack-creator', views: '5,210', unique: '1,890', time: '2m 10s', bounce: '34.8%', leads: 8, cr: '4.23%' },
-                    { path: '/', views: '3,800', unique: '2,920', time: '1m 30s', bounce: '42.1%', leads: 3, cr: '1.02%' },
-                    { path: '/contact', views: '980', unique: '620', time: '1m 15s', bounce: '22.0%', leads: 1, cr: '6.45%' },
-                  ].map((row, idx) => (
-                    <tr key={idx} className="hover:bg-blue-50/40 transition-colors">
-                      <td className="py-3.5 px-4 font-mono font-semibold text-gray-900 flex items-center gap-1.5">
-                        <span className="text-[#1748BB]">{row.path}</span>
-                      </td>
-                      <td className="py-3.5 px-4 text-right font-bold text-gray-900">{row.views}</td>
-                      <td className="py-3.5 px-4 text-right text-gray-600">{row.unique}</td>
-                      <td className="py-3.5 px-4 text-right text-gray-600">{row.time}</td>
-                      <td className="py-3.5 px-4 text-right text-emerald-600 font-semibold">{row.bounce}</td>
-                      <td className="py-3.5 px-4 text-right font-bold text-indigo-700">{row.leads}</td>
-                      <td className="py-3.5 px-4 text-right">
-                        <span className="inline-block bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded-full border border-emerald-200">
-                          {row.cr}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center text-gray-400">
+                      <Layers className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                      <p className="text-sm font-semibold text-gray-700">No page analytics available yet</p>
+                      <p className="text-xs text-gray-400 mt-0.5">Page views, bounce rates, and lead conversions will appear here once tracked.</p>
+                    </td>
+                  </tr>
                 </tbody>
               </table>
             </div>

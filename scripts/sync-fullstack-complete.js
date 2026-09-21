@@ -221,7 +221,7 @@ const FULLSTACK_SECTIONS = {
   sticky_cta: {
     name: 'Sticky Bottom Bar',
     fields: [
-      { name: 'notice_text', label: 'Notice / Urgency Text', field_type: 'short_text', val: 'Limited Seats Available', sort_order: 1 },
+      { name: 'notice_text', label: 'Notice / Urgency Text', field_type: 'short_text', val: 'Limited Seats Only', sort_order: 1 },
       { name: 'button_text', label: 'Button Text', field_type: 'short_text', val: 'ENROLL NOW', sort_order: 2 },
       { name: 'enroll_url', label: 'Button URL', field_type: 'url', val: 'https://learn.valavanacademy.com/clientapp/signup', sort_order: 3 },
     ]

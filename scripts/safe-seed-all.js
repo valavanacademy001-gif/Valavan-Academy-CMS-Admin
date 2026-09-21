@@ -178,7 +178,7 @@ const PAGE_SECTIONS = {
       type: 'cta',
       sort_order: 9,
       fields: [
-        { name: 'notice_text', label: 'Notice Text', field_type: 'short_text', value: 'Limited Seats Available', sort_order: 1 },
+        { name: 'notice_text', label: 'Notice Text', field_type: 'short_text', value: 'Limited Seats Only', sort_order: 1 },
         { name: 'button_text', label: 'Button Text', field_type: 'short_text', value: 'ENROLL NOW', sort_order: 2 },
         { name: 'enroll_url', label: 'Button URL', field_type: 'url', value: 'https://learn.valavanacademy.com/clientapp/signup', sort_order: 3 },
       ]

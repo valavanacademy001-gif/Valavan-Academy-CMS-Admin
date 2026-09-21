@@ -111,13 +111,14 @@ export default function FunnelsGoalsClient({ initialGoals }: { initialGoals: Con
     toast.success('✓ Conversion goal created!')
   }
 
-  // Funnel Stages Data
+  // Funnel Stages Data - Dynamic based on actual tracked events (defaults to 0 if no events tracked)
+  const hasFunnelData = false // Toggle true when telemetry pipeline logs funnel stages
   const funnelSteps = [
     {
       step: 1,
       title: 'Landing Page Views',
-      count: 41200,
-      rate: '100%',
+      count: 0,
+      rate: '0%',
       dropoff: '—',
       color: 'from-blue-600 to-indigo-600',
       icon: Eye,
@@ -125,36 +126,36 @@ export default function FunnelsGoalsClient({ initialGoals }: { initialGoals: Con
     {
       step: 2,
       title: 'Lead Form & Curriculum Interactions',
-      count: 5108,
-      rate: '12.4%',
-      dropoff: '-87.6%',
+      count: 0,
+      rate: '0%',
+      dropoff: '—',
       color: 'from-indigo-600 to-purple-600',
       icon: Users,
     },
     {
       step: 3,
       title: 'WhatsApp & Inquiry CTA Clicks',
-      count: 1977,
-      rate: '4.8%',
-      dropoff: '-61.3%',
+      count: 0,
+      rate: '0%',
+      dropoff: '—',
       color: 'from-purple-600 to-pink-600',
       icon: MessageCircle,
     },
     {
       step: 4,
       title: 'Enrollment Checkout / Form Page',
-      count: 1194,
-      rate: '2.9%',
-      dropoff: '-39.6%',
+      count: 0,
+      rate: '0%',
+      dropoff: '—',
       color: 'from-pink-600 to-amber-600',
       icon: Layers,
     },
     {
       step: 5,
       title: 'Final Student Enrollment / Purchase',
-      count: 659,
-      rate: '1.6%',
-      dropoff: '-44.8%',
+      count: 0,
+      rate: '0%',
+      dropoff: '—',
       color: 'from-amber-600 to-emerald-600',
       icon: CheckCircle2,
     },
@@ -195,56 +196,68 @@ export default function FunnelsGoalsClient({ initialGoals }: { initialGoals: Con
             <h3 className="text-base font-bold text-gray-900">Student Acquisition Funnel</h3>
             <p className="text-xs text-gray-400">Step conversion percentage and drop-off rate from first visit to enrolled student</p>
           </div>
-          <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-            Overall Funnel CR: 1.60%
+          <span className="text-xs font-bold text-gray-600 bg-gray-50 px-2.5 py-1 rounded-full border border-gray-200">
+            Overall Funnel CR: 0.00%
           </span>
         </div>
 
-        {/* Funnel Visual Stack */}
-        <div className="space-y-3 max-w-4xl mx-auto py-2">
-          {funnelSteps.map((s, index) => {
-            const Icon = s.icon
-            const widthPct = Math.max(28, 100 - index * 16)
-            return (
-              <div key={s.step} className="flex flex-col items-center">
-                <div
-                  className={`w-full rounded-2xl p-4 bg-gradient-to-r ${s.color} text-white shadow-md transition-all duration-300 hover:scale-[1.01]`}
-                  style={{ maxWidth: `${widthPct}%` }}
-                >
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center font-bold text-xs shrink-0 backdrop-blur-xs">
-                        {s.step}
-                      </div>
-                      <div>
-                        <div className="font-bold text-xs sm:text-sm text-white flex items-center gap-1.5">
-                          <Icon className="w-3.5 h-3.5 opacity-80" />
-                          <span>{s.title}</span>
+        {/* Funnel Visual Stack or Empty State */}
+        {hasFunnelData ? (
+          <div className="space-y-3 max-w-4xl mx-auto py-2">
+            {funnelSteps.map((s, index) => {
+              const Icon = s.icon
+              const widthPct = Math.max(28, 100 - index * 16)
+              return (
+                <div key={s.step} className="flex flex-col items-center">
+                  <div
+                    className={`w-full rounded-2xl p-4 bg-gradient-to-r ${s.color} text-white shadow-md transition-all duration-300 hover:scale-[1.01]`}
+                    style={{ maxWidth: `${widthPct}%` }}
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center font-bold text-xs shrink-0 backdrop-blur-xs">
+                          {s.step}
                         </div>
-                        <span className="text-[11px] text-white/70">
-                          {s.count.toLocaleString()} visitors
-                        </span>
+                        <div>
+                          <div className="font-bold text-xs sm:text-sm text-white flex items-center gap-1.5">
+                            <Icon className="w-3.5 h-3.5 opacity-80" />
+                            <span>{s.title}</span>
+                          </div>
+                          <span className="text-[11px] text-white/70">
+                            {s.count.toLocaleString()} visitors
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <div className="text-sm sm:text-base font-black text-white">{s.rate}</div>
+                        {s.dropoff !== '—' && (
+                          <div className="text-[10px] text-red-200 font-semibold">{s.dropoff} drop-off</div>
+                        )}
                       </div>
                     </div>
+                  </div>
 
-                    <div className="text-right shrink-0">
-                      <div className="text-sm sm:text-base font-black text-white">{s.rate}</div>
-                      {s.dropoff !== '—' && (
-                        <div className="text-[10px] text-red-200 font-semibold">{s.dropoff} drop-off</div>
-                      )}
+                  {index < funnelSteps.length - 1 && (
+                    <div className="py-1 text-gray-300">
+                      <ArrowDown className="w-4 h-4 animate-bounce" />
                     </div>
-                  </div>
+                  )}
                 </div>
-
-                {index < funnelSteps.length - 1 && (
-                  <div className="py-1 text-gray-300">
-                    <ArrowDown className="w-4 h-4 animate-bounce" />
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="py-12 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center text-center p-6 bg-gray-50/50">
+            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-[#1748BB] flex items-center justify-center mb-3">
+              <Target className="w-6 h-6" />
+            </div>
+            <h4 className="text-sm font-bold text-gray-900">No Funnel Conversion Data Yet</h4>
+            <p className="text-xs text-gray-500 max-w-md mt-1 mb-4">
+              Funnel conversion drop-off stages will automatically be calculated as visitors progress from landing pages to form inquiries and enrollments.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* MODULE 8: CONVERSION GOALS MANAGEMENT */}
@@ -256,64 +269,77 @@ export default function FunnelsGoalsClient({ initialGoals }: { initialGoals: Con
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {goals.map((g) => (
-            <div
-              key={g.id}
-              className={`p-4 rounded-xl border transition-all space-y-3 ${
-                g.is_active
-                  ? 'bg-white border-blue-200 shadow-2xs hover:border-blue-300'
-                  : 'bg-gray-50 border-gray-200 opacity-60'
-              }`}
+        {goals.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {goals.map((g) => (
+              <div
+                key={g.id}
+                className={`p-4 rounded-xl border transition-all space-y-3 ${
+                  g.is_active
+                    ? 'bg-white border-blue-200 shadow-2xs hover:border-blue-300'
+                    : 'bg-gray-50 border-gray-200 opacity-60'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-blue-50 text-[#1748BB] flex items-center justify-center font-bold text-xs shrink-0">
+                      <Target className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-gray-900">{g.name}</h4>
+                      <span className="text-[10px] font-mono text-gray-400 uppercase">
+                        Type: {g.trigger_type}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Toggle */}
+                  <button
+                    type="button"
+                    onClick={() => toggleGoal(g.id)}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer ${
+                      g.is_active ? 'bg-[#1748BB]' : 'bg-gray-300'
+                    }`}
+                  >
+                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                      g.is_active ? 'translate-x-4.5' : 'translate-x-1'
+                    }`} />
+                  </button>
+                </div>
+
+                <div className="bg-gray-50 p-2 rounded-lg border border-gray-100 text-[11px] font-mono text-gray-600 truncate">
+                  Trigger: <span className="text-[#1748BB] font-semibold">{g.trigger_value}</span>
+                </div>
+
+                <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-100">
+                  <div className="flex items-center gap-1.5 text-gray-500 font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span><strong>{g.completions_count}</strong> completions</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => deleteGoal(g.id)}
+                    className="p-1 text-gray-400 hover:text-red-600 rounded transition-colors"
+                    title="Delete Goal"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="py-8 text-center text-gray-400 border border-dashed border-gray-200 rounded-xl">
+            <p className="text-xs">No custom conversion goals created yet.</p>
+            <button
+              type="button"
+              onClick={() => setShowAddGoalModal(true)}
+              className="mt-2 text-xs text-[#1748BB] font-bold hover:underline"
             >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-blue-50 text-[#1748BB] flex items-center justify-center font-bold text-xs shrink-0">
-                    <Target className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-gray-900">{g.name}</h4>
-                    <span className="text-[10px] font-mono text-gray-400 uppercase">
-                      Type: {g.trigger_type}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Toggle */}
-                <button
-                  type="button"
-                  onClick={() => toggleGoal(g.id)}
-                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer ${
-                    g.is_active ? 'bg-[#1748BB]' : 'bg-gray-300'
-                  }`}
-                >
-                  <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                    g.is_active ? 'translate-x-4.5' : 'translate-x-1'
-                  }`} />
-                </button>
-              </div>
-
-              <div className="bg-gray-50 p-2 rounded-lg border border-gray-100 text-[11px] font-mono text-gray-600 truncate">
-                Trigger: <span className="text-[#1748BB] font-semibold">{g.trigger_value}</span>
-              </div>
-
-              <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-100">
-                <div className="flex items-center gap-1.5 text-gray-500 font-medium">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span><strong>{g.completions_count}</strong> completions</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => deleteGoal(g.id)}
-                  className="p-1 text-gray-400 hover:text-red-600 rounded transition-colors"
-                  title="Delete Goal"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+              + Create your first conversion goal
+            </button>
+          </div>
+        )}
       </div>
 
       {/* CREATE GOAL MODAL */}
