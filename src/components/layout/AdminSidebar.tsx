@@ -19,12 +19,12 @@ const websiteItems = [
 ]
 
 const marketingItems = [
-  { label: 'SEO & AEO Engine', href: '/dashboard/marketing/seo', icon: Search, badge: 'AEO' },
   { label: 'Tracking & Pixels', href: '/dashboard/marketing/tracking', icon: BarChart3, badge: 'Active' },
-  { label: 'Page Tracking Manager', href: '/dashboard/marketing/page-tracking', icon: Layers, badge: 'New' },
+  { label: 'Page Tracking', href: '/dashboard/marketing/page-tracking', icon: Layers, badge: 'New' },
+  { label: 'Lead Management', href: '/dashboard/marketing/leads', icon: Users, badge: 'Leads' },
+  { label: 'Conversion Settings', href: '/dashboard/marketing/conversion-settings', icon: Target },
+  { label: 'SEO & AEO Engine', href: '/dashboard/marketing/seo', icon: Search, badge: 'AEO' },
   { label: 'Session Recordings', href: '/dashboard/marketing/recordings', icon: Video, badge: 'Clarity' },
-  { label: 'Leads & Attribution', href: '/dashboard/marketing/leads', icon: Users },
-  { label: 'Funnels & Goals', href: '/dashboard/marketing/funnels', icon: Target },
   { label: 'Live Event Stream', href: '/dashboard/marketing/events', icon: Activity },
   { label: 'Connections Hub', href: '/dashboard/marketing/connections', icon: Zap, badge: 'Hub' },
   { label: 'Reports & Export', href: '/dashboard/marketing/reports', icon: FileSpreadsheet },
