@@ -456,6 +456,15 @@ export default function PageTrackingManagerClient({ initialRules }: { initialRul
                   <option value="Custom">Custom Event</option>
                   <option value="None">None</option>
                 </select>
+                {selectedRule.meta_event === 'Custom' && (
+                  <input
+                    type="text"
+                    value={selectedRule.meta_custom_event_name || ''}
+                    onChange={(e) => setSelectedRule({ ...selectedRule, meta_custom_event_name: e.target.value })}
+                    placeholder="Custom Meta Event Name (e.g. WorkshopBrochureDownloaded)"
+                    className="input text-xs font-mono mt-1.5"
+                  />
+                )}
               </div>
 
               {/* GA4 Event */}
@@ -478,6 +487,15 @@ export default function PageTrackingManagerClient({ initialRules }: { initialRul
                   <option value="custom">custom</option>
                   <option value="none">none</option>
                 </select>
+                {selectedRule.ga4_event === 'custom' && (
+                  <input
+                    type="text"
+                    value={selectedRule.ga4_custom_event_name || ''}
+                    onChange={(e) => setSelectedRule({ ...selectedRule, ga4_custom_event_name: e.target.value })}
+                    placeholder="Custom GA4 Event Name (e.g. course_brochure_download)"
+                    className="input text-xs font-mono mt-1.5"
+                  />
+                )}
               </div>
             </div>
 
@@ -518,15 +536,28 @@ export default function PageTrackingManagerClient({ initialRules }: { initialRul
             </div>
 
             {/* Custom Head & Body Scripts */}
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-700">Custom Page-Specific Head Script (Optional)</label>
-              <textarea
-                rows={2}
-                value={selectedRule.custom_head_script || ''}
-                onChange={(e) => setSelectedRule({ ...selectedRule, custom_head_script: e.target.value })}
-                placeholder="<!-- Custom JavaScript for this URL only -->"
-                className="input text-xs font-mono bg-gray-900 text-blue-300 resize-none"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-gray-100">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-700">Custom Head Script (Optional)</label>
+                <textarea
+                  rows={3}
+                  value={selectedRule.custom_head_script || ''}
+                  onChange={(e) => setSelectedRule({ ...selectedRule, custom_head_script: e.target.value })}
+                  placeholder="<!-- Custom Head JavaScript for this URL -->"
+                  className="input text-xs font-mono bg-gray-900 text-blue-300 resize-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-700">Custom Body Script (Optional)</label>
+                <textarea
+                  rows={3}
+                  value={selectedRule.custom_body_script || ''}
+                  onChange={(e) => setSelectedRule({ ...selectedRule, custom_body_script: e.target.value })}
+                  placeholder="<!-- Custom Body JavaScript for this URL -->"
+                  className="input text-xs font-mono bg-gray-900 text-amber-300 resize-none"
+                />
+              </div>
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
