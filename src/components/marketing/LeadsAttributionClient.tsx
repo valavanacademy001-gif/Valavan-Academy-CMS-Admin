@@ -69,6 +69,15 @@ export const OCCUPATION_OPTIONS = [
   'House Wife',
 ]
 
+export const CHANNEL_OPTIONS = [
+  'Direct Traffic',
+  'Instagram / Meta',
+  'Google / Search',
+  'YouTube',
+  'WhatsApp',
+  'Referral',
+]
+
 export const QUICK_NOTE_PRESETS = [
   'Will join next month',
   'Asked for details on WhatsApp',
@@ -85,6 +94,7 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
   const [search, setSearch] = useState('')
   const [selectedStatus, setSelectedStatus] = useState<string>('All')
   const [selectedOccupation, setSelectedOccupation] = useState<string>('All')
+  const [selectedChannel, setSelectedChannel] = useState<string>('All')
   const [dateRangeFilter, setDateRangeFilter] = useState<'All' | 'today' | 'yesterday' | '7days' | '30days'>('All')
 
   // Modals & Active Lead Selection
@@ -235,6 +245,101 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
     return { label: '90-Day Mastery', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' }
   }
 
+  // Traffic Channel Detection & Styling Helper
+  const getTrafficChannel = (lead: LeadItem) => {
+    const s = (lead.utm_source || '').toLowerCase()
+    const m = (lead.utm_medium || '').toLowerCase()
+    const r = (lead.referrer || '').toLowerCase()
+    const c = (lead.utm_campaign || '').toLowerCase()
+
+    if (
+      s.includes('instagram') ||
+      s.includes('meta') ||
+      s.includes('facebook') ||
+      s.includes('fb') ||
+      s.includes('ig') ||
+      r.includes('instagram.com') ||
+      r.includes('facebook.com') ||
+      r.includes('fb.me') ||
+      r.includes('fbclid') ||
+      r.includes('l.instagram.com') ||
+      c.includes('meta') ||
+      c.includes('instagram')
+    ) {
+      return {
+        key: 'Instagram / Meta',
+        label: 'Instagram / Meta',
+        color: 'bg-purple-50 text-purple-700 border-purple-200',
+        dotColor: 'bg-gradient-to-tr from-rose-500 to-purple-600',
+      }
+    }
+
+    if (
+      s.includes('google') ||
+      m.includes('cpc') ||
+      m.includes('organic') ||
+      r.includes('google.com') ||
+      r.includes('google.co.in')
+    ) {
+      return {
+        key: 'Google / Search',
+        label: 'Google / Search',
+        color: 'bg-amber-50 text-amber-800 border-amber-200',
+        dotColor: 'bg-amber-500',
+      }
+    }
+
+    if (
+      s.includes('youtube') ||
+      s.includes('yt') ||
+      r.includes('youtube.com') ||
+      r.includes('youtu.be')
+    ) {
+      return {
+        key: 'YouTube',
+        label: 'YouTube',
+        color: 'bg-red-50 text-red-700 border-red-200',
+        dotColor: 'bg-red-500',
+      }
+    }
+
+    if (
+      s.includes('whatsapp') ||
+      s.includes('wa') ||
+      r.includes('whatsapp.com') ||
+      r.includes('wa.me')
+    ) {
+      return {
+        key: 'WhatsApp',
+        label: 'WhatsApp',
+        color: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        dotColor: 'bg-emerald-500',
+      }
+    }
+
+    if (
+      s === 'direct' ||
+      s === 'manual' ||
+      s === '' ||
+      s === 'none' ||
+      (!s && !r)
+    ) {
+      return {
+        key: 'Direct Traffic',
+        label: 'Direct Traffic',
+        color: 'bg-blue-50 text-blue-700 border-blue-200',
+        dotColor: 'bg-blue-500',
+      }
+    }
+
+    return {
+      key: lead.utm_source || 'Referral',
+      label: lead.utm_source || 'Referral',
+      color: 'bg-gray-100 text-gray-700 border-gray-200',
+      dotColor: 'bg-gray-400',
+    }
+  }
+
   // Handle inline status change
   const handleStatusChange = async (leadId: string, newStatus: string) => {
     const updated = leads.map((l) => (l.id === leadId ? { ...l, status: newStatus } : l))
@@ -357,7 +462,13 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
       // 4. Occupation
       if (selectedOccupation !== 'All' && l.occupation !== selectedOccupation) return false
 
-      // 5. Date
+      // 5. Traffic Channel
+      if (selectedChannel !== 'All') {
+        const ch = getTrafficChannel(l)
+        if (ch.key !== selectedChannel && ch.label !== selectedChannel) return false
+      }
+
+      // 6. Date
       const t = new Date(l.created_at).getTime()
       if (t < cutoffStart || t > cutoffEnd) return false
 
@@ -393,7 +504,7 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
         convRate: convRate,
       },
     }
-  }, [leads, activeProgramTab, search, selectedStatus, selectedOccupation, dateRangeFilter])
+  }, [leads, activeProgramTab, search, selectedStatus, selectedOccupation, selectedChannel, dateRangeFilter])
 
   // -------------------------------------------------------------
   // CSV & Excel Exporters
@@ -413,6 +524,7 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
       'Phone Number',
       'Email',
       'Occupation',
+      'Traffic Channel',
       'Status',
       'Sales Notes',
       'Assigned To',
@@ -435,6 +547,7 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
       `"${l.phone}"`,
       `"${l.email || ''}"`,
       `"${l.occupation || ''}"`,
+      `"${getTrafficChannel(l).label}"`,
       `"${l.status}"`,
       `"${(l.sales_notes || '').replace(/"/g, '""')}"`,
       `"${l.assigned_to || ''}"`,
@@ -589,7 +702,7 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
         </div>
 
         {/* Search & Filter Controls */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           {/* Search Input */}
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -631,6 +744,23 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
               {OCCUPATION_OPTIONS.map((occ) => (
                 <option key={occ} value={occ}>
                   {occ}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Traffic Channel Filter */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-bold text-gray-500 whitespace-nowrap">Channel:</span>
+            <select
+              value={selectedChannel}
+              onChange={(e) => setSelectedChannel(e.target.value)}
+              className="w-full py-2 px-2.5 text-xs border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#1748BB]"
+            >
+              <option value="All">All Channels</option>
+              {CHANNEL_OPTIONS.map((ch) => (
+                <option key={ch} value={ch}>
+                  {ch}
                 </option>
               ))}
             </select>
@@ -678,6 +808,7 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
                 <th className="py-3 px-3.5">Phone (WhatsApp)</th>
                 <th className="py-3 px-3.5">Email</th>
                 <th className="py-3 px-3.5">Occupation</th>
+                <th className="py-3 px-3.5">Traffic Channel</th>
                 <th className="py-3 px-3.5">Status</th>
                 <th className="py-3 px-3.5 min-w-[200px]">Sales Notes</th>
                 <th className="py-3 px-3.5">Attribution</th>
@@ -687,7 +818,7 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
             <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
               {filteredLeads.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-14 text-center text-gray-400">
+                  <td colSpan={11} className="py-14 text-center text-gray-400">
                     <Users className="w-8 h-8 mx-auto mb-2 opacity-40" />
                     <p className="text-sm font-semibold text-gray-700">No leads found</p>
                     <p className="text-xs text-gray-400 mt-0.5">
@@ -702,6 +833,7 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
                   const programBadge = getProgramBadge(lead.program_interested)
                   const cleanPhone = lead.phone ? lead.phone.replace(/[^0-9]/g, '') : ''
                   const waNumber = cleanPhone.startsWith('91') ? cleanPhone : `91${cleanPhone}`
+                  const channel = getTrafficChannel(lead)
 
                   return (
                     <tr key={lead.id} className="hover:bg-blue-50/20 transition-colors">
@@ -768,6 +900,14 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
                       <td className="py-3 px-3.5 whitespace-nowrap">
                         <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-gray-100 text-gray-700">
                           {lead.occupation || 'Student'}
+                        </span>
+                      </td>
+
+                      {/* Traffic Channel */}
+                      <td className="py-3 px-3.5 whitespace-nowrap">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${channel.color}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${channel.dotColor}`} />
+                          <span>{channel.label}</span>
                         </span>
                       </td>
 
@@ -979,6 +1119,10 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
             <div className="space-y-2 pt-2 border-t border-gray-100">
               <h4 className="text-xs font-bold text-gray-800">Marketing Attribution & Tracking Data</h4>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-[11px]">
+                <div className="p-2.5 bg-blue-50/80 border border-blue-100 rounded-lg">
+                  <span className="text-[#1748BB] block text-[9px] uppercase font-bold">Traffic Channel</span>
+                  <span className="font-bold text-[#1748BB]">{getTrafficChannel(selectedLead).label}</span>
+                </div>
                 <div className="p-2.5 bg-gray-50 rounded-lg">
                   <span className="text-gray-400 block text-[9px] uppercase">UTM Source</span>
                   <span className="font-mono font-bold text-gray-800">{selectedLead.utm_source || 'direct'}</span>
