@@ -3,10 +3,10 @@ import SEOAEODashboardClient from '@/components/marketing/SEOAEODashboardClient'
 
 export const metadata = {
   title: 'SEO & AEO Engine | Valavan Academy CMS',
-  description: 'Manage Global SEO, Answer Engine Optimization (AEO), Schema Markup, Sitemap, and Robots.txt',
+  description: 'Manage Global SEO, Answer Engine Optimization (AEO), Schema Markup, Sitemap, and Robots.txt for Valavan Academy',
 }
 
-export default async function SettingsSEOPage() {
+export default async function MarketingSEOPage() {
   const supabase = await createClient()
 
   let initialGlobalSEO = undefined
@@ -65,7 +65,7 @@ export default async function SettingsSEOPage() {
       }
     }
   } catch (err) {
-    console.error('Failed fetching SEO settings in SettingsSEOPage:', err)
+    console.error('Failed fetching SEO settings in MarketingSEOPage:', err)
   }
 
   return (

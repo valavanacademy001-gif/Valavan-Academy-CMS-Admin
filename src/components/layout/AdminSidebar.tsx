@@ -19,6 +19,7 @@ const websiteItems = [
 ]
 
 const marketingItems = [
+  { label: 'SEO & AEO Engine', href: '/dashboard/marketing/seo', icon: Search, badge: 'AEO' },
   { label: 'Tracking & Pixels', href: '/dashboard/marketing/tracking', icon: BarChart3, badge: 'Active' },
   { label: 'Page Tracking Manager', href: '/dashboard/marketing/page-tracking', icon: Layers, badge: 'New' },
   { label: 'Session Recordings', href: '/dashboard/marketing/recordings', icon: Video, badge: 'Clarity' },
