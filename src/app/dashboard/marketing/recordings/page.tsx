@@ -12,27 +12,20 @@ export default async function SessionRecordingsPage() {
   if (page) {
     const { data: sec } = await supabase.from('sections').select('id').eq('page_id', page.id).eq('slug', 'tracking_analytics').maybeSingle()
     if (sec) {
-      // 1. Fetch Clarity Project ID and status
-      const { data: clarityField } = await supabase
+      const { data: fieldVals } = await supabase
         .from('field_values')
         .select('*, field:fields(name)')
         .eq('section_id', sec.id)
-        .eq('field.name', 'clarity_project_id')
-        .maybeSingle()
 
+      // 1. Fetch Clarity Project ID and status
+      const clarityField = fieldVals?.find((f: any) => f.field?.name === 'clarity_project_id')
       if (clarityField) {
         clarityProjectId = clarityField.published_value_text || clarityField.value_text || ''
         clarityConnected = Boolean(clarityProjectId.trim())
       }
 
       // 2. Fetch Session Recordings Metadata
-      const { data: recField } = await supabase
-        .from('field_values')
-        .select('*, field:fields(name)')
-        .eq('section_id', sec.id)
-        .eq('field.name', 'session_recordings_data')
-        .maybeSingle()
-
+      const recField = fieldVals?.find((f: any) => f.field?.name === 'session_recordings_data')
       if (recField) {
         try {
           const raw = recField.published_value_text || recField.value_text
