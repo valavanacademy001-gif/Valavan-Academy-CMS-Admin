@@ -6,7 +6,7 @@ import {
   LayoutDashboard, FileText, BookOpen, Users, Video,
   Image, Settings, Award, Star, ChevronRight, BarChart3,
   Target, Activity, FileSpreadsheet, Sparkles, Filter, Megaphone,
-  Globe, Code, Shield, Search, Zap, Layers, Lock, Sliders
+  Globe, Code, Shield, Search, Zap, Layers, Lock, Sliders, X
 } from 'lucide-react'
 
 const websiteItems = [
@@ -38,7 +38,13 @@ const settingsItems = [
   { label: 'Cookie Consent', href: '/dashboard/settings/cookie-consent', icon: Shield },
 ]
 
-export default function AdminSidebar() {
+export default function AdminSidebar({
+  onClose,
+  isMobile = false,
+}: {
+  onClose?: () => void
+  isMobile?: boolean
+} = {}) {
   const pathname = usePathname()
 
   const isNavActive = (href: string) => {
@@ -47,9 +53,9 @@ export default function AdminSidebar() {
   }
 
   return (
-    <aside className="w-[275px] bg-white border-r border-gray-200 flex flex-col h-full shrink-0 overflow-y-auto select-none">
+    <aside className={`w-[275px] bg-white border-r border-gray-200 flex flex-col h-full shrink-0 overflow-y-auto select-none ${isMobile ? 'w-full border-r-0' : ''}`}>
       {/* Logo Header */}
-      <div className="p-4.5 border-b border-gray-100">
+      <div className="p-4.5 border-b border-gray-100 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1748BB] to-blue-700 flex items-center justify-center shrink-0 overflow-hidden shadow-xs text-white font-black text-sm">
             VA
@@ -62,6 +68,16 @@ export default function AdminSidebar() {
             </div>
           </div>
         </div>
+        {isMobile && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+            aria-label="Close menu"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       {/* Navigation */}
@@ -70,6 +86,7 @@ export default function AdminSidebar() {
         <div>
           <Link
             href="/dashboard"
+            onClick={onClose}
             className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all group ${
               pathname === '/dashboard'
                 ? 'bg-blue-50 text-[#1748BB] font-bold shadow-2xs'
@@ -94,6 +111,7 @@ export default function AdminSidebar() {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={onClose}
                 className={`flex items-center gap-2.5 px-3 py-1.8 rounded-xl text-xs font-medium transition-all group ${
                   active
                     ? 'bg-blue-50 text-[#1748BB] font-bold shadow-2xs'
@@ -124,6 +142,7 @@ export default function AdminSidebar() {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={onClose}
                 className={`flex items-center gap-2.5 px-3 py-1.8 rounded-xl text-xs font-medium transition-all group ${
                   active
                     ? 'bg-blue-50 text-[#1748BB] font-bold shadow-2xs'
@@ -162,6 +181,7 @@ export default function AdminSidebar() {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={onClose}
                 className={`flex items-center gap-2.5 px-3 py-1.8 rounded-xl text-xs font-medium transition-all group ${
                   active
                     ? 'bg-blue-50 text-[#1748BB] font-bold shadow-2xs'
