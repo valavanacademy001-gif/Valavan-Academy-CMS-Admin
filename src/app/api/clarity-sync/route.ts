@@ -361,9 +361,9 @@ export async function POST(req: Request) {
       })
     }
 
-    // Persist to Supabase session_recordings_data
+    // Persist to protected clarity_recordings_data field (never overwritten by /api/track)
     const recsJson = JSON.stringify(records)
-    await upsertFieldValue(pageId, sectionId, 'session_recordings_data', 'Session Recordings Data', recsJson, 25)
+    await upsertFieldValue(pageId, sectionId, 'clarity_recordings_data', 'Clarity Recordings Data (Protected)', recsJson, 28)
 
     // Also store the raw clarity response for debugging
     await upsertFieldValue(pageId, sectionId, 'clarity_last_sync_data', 'Clarity Last Sync Data', JSON.stringify({

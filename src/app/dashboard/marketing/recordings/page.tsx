@@ -36,14 +36,47 @@ export default async function SessionRecordingsPage() {
         clarityProjectId = clarityField.published_value_text || clarityField.value_text || ''
         clarityConnected = Boolean(clarityProjectId.trim())
       }
-
-      // Default Clarity ID fallback if empty
       if (!clarityProjectId) {
         clarityProjectId = 'ymogx7tv3i'
         clarityConnected = true
       }
 
-      // 2. Fetch raw events
+      // 2. PRIORITY 1: Fetch Clarity-synced recordings (real Clarity data — protected field)
+      // This field is only written by /api/clarity-sync and the push script, never by /api/track
+      const clarityRecField = fieldVals?.find(
+        (f: any) => f.field?.name === 'clarity_recordings_data'
+      )
+      if (clarityRecField) {
+        try {
+          const raw = clarityRecField.published_value_text || clarityRecField.value_text
+          if (raw) {
+            const parsed = JSON.parse(raw)
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              initialRecordings = parsed
+            }
+          }
+        } catch (e) {
+          console.error('Error parsing clarity_recordings_data', e)
+        }
+      }
+
+      // 3. PRIORITY 2: Fall back to session_recordings_data if no Clarity data
+      if (initialRecordings.length === 0) {
+        const recField = fieldVals?.find(
+          (f: any) =>
+            f.field?.name === 'session_recordings_data' || f.field?.name === 'visitor_sessions_data'
+        )
+        if (recField) {
+          try {
+            const raw = recField.published_value_text || recField.value_text
+            if (raw) initialRecordings = JSON.parse(raw)
+          } catch (e) {
+            console.error('Error parsing session recordings data', e)
+          }
+        }
+      }
+
+      // 4. Fetch raw events (for local sync only)
       const eventsField = fieldVals?.find((f: any) => f.field?.name === 'events_log_data')
       if (eventsField) {
         try {
@@ -54,22 +87,8 @@ export default async function SessionRecordingsPage() {
         }
       }
 
-      // 3. Fetch Session Recordings Metadata
-      const recField = fieldVals?.find(
-        (f: any) =>
-          f.field?.name === 'session_recordings_data' || f.field?.name === 'visitor_sessions_data'
-      )
-      if (recField) {
-        try {
-          const raw = recField.published_value_text || recField.value_text
-          if (raw) initialRecordings = JSON.parse(raw)
-        } catch (e) {
-          console.error('Error parsing session recordings data', e)
-        }
-      }
-
-      // 4. Auto-aggregate if initialRecordings is empty or events exist
-      if ((!initialRecordings || initialRecordings.length === 0) && rawEvents.length > 0) {
+      // 5. Last resort: aggregate from events only if nothing else exists
+      if (initialRecordings.length === 0 && rawEvents.length > 0) {
         initialRecordings = aggregateEventsToRecordings(rawEvents, clarityProjectId)
       }
     }
