@@ -139,14 +139,12 @@ export default function SessionRecordingsClient({
     return past.length > 0 ? past[past.length - 1] : currentTimelineEvents[0]
   }, [currentTimelineEvents, currentPlayTime])
 
-  // Dynamic active URL during timeline playback (tracks user navigation across pages)
+  // Active URL is locked to the session's landing page
+  // (no random page-switching during playback — each session shows its own correct landing page)
   const activeUrl = useMemo(() => {
     if (!watchingRecording) return 'https://www.valavanacademy.com/'
-    if (activeEvent && activeEvent.target && activeEvent.target !== '/') {
-      return getFullWebUrl(activeEvent.target)
-    }
-    return getFullWebUrl(watchingRecording.landing_page)
-  }, [watchingRecording, activeEvent])
+    return getFullWebUrl(watchingRecording.landing_page || '/')
+  }, [watchingRecording])
 
   // Current scroll depth percentage (0 to max scroll_depth)
   const currentScrollPercent = useMemo(() => {
@@ -1605,19 +1603,26 @@ export default function SessionRecordingsClient({
                         </div>
                       )}
 
-                      {/* ── REAL LIVE WEBPAGE IFRAME (EXACT CONNECTED WEBSITE) ── */}
+                      {/* ── LIVE WEBSITE PREVIEW (LANDING PAGE FOR THIS SESSION) ── */}
                       <div
                         className="w-full flex-1 overflow-hidden relative bg-white"
                         style={{ scrollbarWidth: 'none' }}
                       >
                         <iframe
+                          key={watchingRecording.session_id + '-mobile'}
                           src={activeUrl}
-                          className={`w-full h-full border-0 ${
-                            isInteractiveMode ? 'pointer-events-auto' : 'pointer-events-none'
-                          }`}
-                          title="Live Session Webpage Recording"
+                          className="w-full h-full border-0 pointer-events-none"
+                          title={`Session ${watchingRecording.session_id} - ${watchingRecording.landing_page}`}
                           loading="lazy"
                         />
+                        {/* Clarity Recording Banner */}
+                        <div className="absolute top-2 left-2 right-2 z-40 pointer-events-none">
+                          <div className="bg-[#1748BB]/90 backdrop-blur-md text-white text-[10px] font-semibold px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 shadow-lg">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
+                            <span>Landing: <span className="font-mono font-bold">{watchingRecording.landing_page}</span></span>
+                            <span className="ml-auto opacity-75">Live Preview</span>
+                          </div>
+                        </div>
                       </div>
 
                       {/* Mobile Bottom Home Indicator Bar */}
@@ -1629,7 +1634,7 @@ export default function SessionRecordingsClient({
                       <div className="absolute bottom-4 left-3 right-3 z-30 pointer-events-none flex justify-between items-center text-[10px]">
                         <span className="bg-white/95 backdrop-blur-md text-[#1748BB] font-bold px-2.5 py-0.5 rounded-md border border-slate-200 shadow-xs flex items-center gap-1">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                          <span>Mobile 375px Live View</span>
+                          <span>Mobile 375px</span>
                         </span>
                         <span className="bg-white/95 backdrop-blur-md text-slate-700 font-mono px-2 py-0.5 rounded-md border border-slate-200 shadow-xs font-semibold">
                           {formatDuration(currentPlayTime)} / {formatDuration(watchingRecording.session_duration)}
@@ -1684,26 +1689,33 @@ export default function SessionRecordingsClient({
                         </div>
                       )}
 
-                      {/* ── REAL LIVE WEBPAGE IFRAME (EXACT CONNECTED WEBSITE) ── */}
+                      {/* ── LIVE WEBSITE PREVIEW (LANDING PAGE FOR THIS SESSION) ── */}
                       <div
                         className="w-full flex-1 overflow-hidden relative bg-white"
                         style={{ scrollbarWidth: 'none' }}
                       >
                         <iframe
+                          key={watchingRecording.session_id + '-desktop'}
                           src={activeUrl}
-                          className={`w-full h-full border-0 ${
-                            isInteractiveMode ? 'pointer-events-auto' : 'pointer-events-none'
-                          }`}
-                          title="Live Session Webpage Recording"
+                          className="w-full h-full border-0 pointer-events-none"
+                          title={`Session ${watchingRecording.session_id} - ${watchingRecording.landing_page}`}
                           loading="lazy"
                         />
+                        {/* Clarity Recording Banner */}
+                        <div className="absolute top-2 left-3 right-3 z-40 pointer-events-none">
+                          <div className="bg-[#1748BB]/90 backdrop-blur-md text-white text-[11px] font-semibold px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-lg">
+                            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
+                            <span>Landing Page: <span className="font-mono font-bold">{watchingRecording.landing_page}</span></span>
+                            <span className="ml-auto text-white/70 text-[10px]">Live Preview • For actual recording tap "Open in Clarity"</span>
+                          </div>
+                        </div>
                       </div>
 
                       {/* LIVE INTERACTION BADGE OVERLAY */}
                       <div className="absolute bottom-3 left-3 right-3 z-30 pointer-events-none flex justify-between items-center text-[10px]">
                         <span className="bg-white/95 backdrop-blur-md text-[#1748BB] font-bold px-2.5 py-0.5 rounded-md border border-slate-200 shadow-xs flex items-center gap-1">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                          <span>Desktop 1440px Live View</span>
+                          <span>Desktop 1440px</span>
                         </span>
                         <span className="bg-white/95 backdrop-blur-md text-slate-700 font-mono px-2 py-0.5 rounded-md border border-slate-200 shadow-xs font-semibold">
                           {formatDuration(currentPlayTime)} / {formatDuration(watchingRecording.session_duration)}
