@@ -60,6 +60,41 @@ const REGIONAL_CITIES = [
   'Hyderabad',
 ]
 
+export function normalizePageUrl(path: string): string {
+  if (!path || path === '/') return '/'
+  let clean = path.trim().replace(/^https?:\/\/[^\/]+/, '')
+  if (!clean.startsWith('/')) clean = '/' + clean
+  clean = clean.split('?')[0].split('#')[0]
+
+  if (/full-stack|creator/i.test(clean)) {
+    return '/programs/full-stack-creator'
+  }
+  if (/graphic-design|90-day/i.test(clean)) {
+    return '/programs/90-days-graphic-design'
+  }
+  if (/workshop|3-hour|live-workshop/i.test(clean)) {
+    return '/programs/3-hours-live-workshop'
+  }
+  if (/about/i.test(clean)) {
+    return '/about'
+  }
+  if (/community/i.test(clean)) {
+    return '/community'
+  }
+  if (/contact/i.test(clean)) {
+    return '/contact'
+  }
+  if (/program/i.test(clean)) {
+    return '/programs'
+  }
+  return clean
+}
+
+export function getFullWebUrl(path: string): string {
+  const norm = normalizePageUrl(path)
+  return `https://www.valavanacademy.com${norm === '/' ? '' : norm}`
+}
+
 /**
  * Converts raw events stream into aggregated session recording metadata
  */
@@ -95,7 +130,7 @@ export function aggregateEventsToRecordings(
       duration = Math.max(24, Math.min(210, evList.length * 18 + (idx % 35)))
     }
 
-    const pages = new Set(evList.map((e) => e.page_url || e.page_path || '/'))
+    const pages = new Set(evList.map((e) => normalizePageUrl(e.page_url || e.page_path || '/')))
     const clicks = evList.filter((e) =>
       /click|button|cta|form_submit|whatsapp|submit/i.test(e.event_name || '')
     ).length
@@ -129,6 +164,11 @@ export function aggregateEventsToRecordings(
     const assignedCity = firstEv.city || REGIONAL_CITIES[idx % REGIONAL_CITIES.length]
     const cleanVisitorId = firstEv.visitor_id || ('vid_' + sid.replace(/^sid_/, ''))
 
+    const rawLanding = firstEv.page_url || firstEv.page_path || '/'
+    const rawExit = lastEv.page_url || lastEv.page_path || rawLanding
+    const normLanding = normalizePageUrl(rawLanding)
+    const normExit = normalizePageUrl(rawExit)
+
     const recordingItem: SessionRecordingItem = {
       id: 'rec_' + sid.replace(/[^a-zA-Z0-9]/g, '_'),
       session_id: sid,
@@ -147,8 +187,8 @@ export function aggregateEventsToRecordings(
         formattedDevice === 'Mobile' ? 'Android / iOS' : 'macOS / Windows',
       session_duration: duration,
       pages_viewed: Math.max(1, pages.size),
-      landing_page: firstEv.page_url || firstEv.page_path || '/',
-      exit_page: lastEv.page_url || lastEv.page_path || firstEv.page_url || '/',
+      landing_page: normLanding,
+      exit_page: normExit,
       referrer:
         firstEv.referrer === 'direct' || !firstEv.referrer ? 'Direct Entry' : firstEv.referrer,
       utm_source: firstEv.utm_source !== 'direct' && firstEv.utm_source ? firstEv.utm_source : '',
@@ -176,13 +216,13 @@ export function aggregateEventsToRecordings(
         else if (evName.includes('click') || evName.includes('cta') || evName.includes('whatsapp'))
           evType = 'click'
 
+        const targetNorm = normalizePageUrl(ev.page_url || ev.page_path || rawLanding)
+
         return {
           time_offset: isNaN(offset) ? evIdx * 5 : offset,
           event_type: evType,
-          description: `${(ev.event_name || 'Event').replace(/_/g, ' ')} on ${
-            ev.page_url || ev.page_path || '/'
-          }`,
-          target: ev.page_url || ev.page_path || '/',
+          description: `${(ev.event_name || 'Event').replace(/_/g, ' ')} on ${targetNorm}`,
+          target: targetNorm,
         }
       }),
     }

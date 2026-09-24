@@ -21,6 +21,8 @@ import {
   SyncLogItem,
   aggregateEventsToRecordings,
   TimelineEvent,
+  normalizePageUrl,
+  getFullWebUrl,
 } from '@/lib/sessionUtils'
 
 interface SessionRecordingsClientProps {
@@ -106,12 +108,7 @@ export default function SessionRecordingsClient({
 
   // Helper to normalize web preview URL
   const getNormalizedWebUrl = useCallback((path: string) => {
-    if (!path || path === '/') return 'https://www.valavanacademy.com/'
-    let clean = path.trim()
-    if (!clean.startsWith('/')) clean = '/' + clean
-    if (clean === '/programs/90-days-graphic-design-mentorship') clean = '/programs/90-days-graphic-design'
-    if (clean === '/workshop' || clean === '/3-hours-live-workshop') clean = '/programs/3-hours-live-workshop'
-    return `https://www.valavanacademy.com${clean}`
+    return getFullWebUrl(path)
   }, [])
 
   // Computed Timeline events for current playing session
@@ -136,6 +133,15 @@ export default function SessionRecordingsClient({
     const past = currentTimelineEvents.filter((e) => e.time_offset <= currentPlayTime)
     return past.length > 0 ? past[past.length - 1] : currentTimelineEvents[0]
   }, [currentTimelineEvents, currentPlayTime])
+
+  // Dynamic active URL during timeline playback (tracks user navigation across pages)
+  const activeUrl = useMemo(() => {
+    if (!watchingRecording) return 'https://www.valavanacademy.com/'
+    if (activeEvent && activeEvent.target && activeEvent.target !== '/') {
+      return getFullWebUrl(activeEvent.target)
+    }
+    return getFullWebUrl(watchingRecording.landing_page)
+  }, [watchingRecording, activeEvent])
 
   // Current scroll depth percentage (0 to max scroll_depth)
   const currentScrollPercent = useMemo(() => {
@@ -660,7 +666,6 @@ export default function SessionRecordingsClient({
     : 'https://clarity.microsoft.com/'
 
   const isMobilePlayer = replayDeviceMode === 'mobile'
-  const activeUrl = watchingRecording ? getNormalizedWebUrl(watchingRecording.landing_page) : 'https://www.valavanacademy.com/'
 
   return (
     <div className="space-y-6">
@@ -1409,10 +1414,10 @@ export default function SessionRecordingsClient({
                 </div>
 
                 {/* ── INTERACTIVE WEBPAGE VIEWPORT CONTAINER (MOBILE OR DESKTOP SIZE) ── */}
-                <div className="flex-1 min-h-[420px] max-h-[540px] sm:max-h-[580px] bg-slate-200/70 rounded-2xl border border-slate-300/80 relative flex items-center justify-center overflow-hidden p-2 sm:p-4 shadow-inner">
+                <div className="flex-1 h-full min-h-[520px] bg-slate-100/90 rounded-2xl border border-slate-200/90 relative flex items-center justify-center overflow-y-auto p-2 sm:p-4 shadow-inner">
                   {previewMode === 'clarity' ? (
                     /* ── CLARITY STUDIO STREAM CARD ── */
-                    <div className="w-full max-w-xl bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-xl text-center space-y-4 animate-in fade-in duration-300">
+                    <div className="w-full max-w-xl bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-xl text-center space-y-4 animate-in fade-in duration-300 my-auto">
                       <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center mx-auto shadow-md">
                         <Video className="w-7 h-7 fill-white/20" />
                       </div>
@@ -1455,47 +1460,20 @@ export default function SessionRecordingsClient({
                         </button>
                       </div>
                     </div>
-                  ) : (
-                    /* ── AUTHENTIC DEVICE FRAME (MOBILE 375px OR DESKTOP 100%) ── */
-                    <div
-                      className={`h-full transition-all duration-300 relative shadow-2xl overflow-hidden bg-white text-slate-900 flex flex-col ${
-                        isMobilePlayer
-                          ? 'w-[360px] sm:w-[375px] rounded-[44px] border-[10px] border-slate-900 ring-4 ring-slate-300/80'
-                          : 'w-full rounded-2xl border-2 border-slate-400/80 ring-2 ring-slate-200'
-                      }`}
-                    >
+                  ) : isMobilePlayer ? (
+                    /* ── AUTHENTIC SLENDER SMARTPHONE DEVICE FRAME (340px × 640px) ── */
+                    <div className="w-[320px] sm:w-[340px] h-[560px] sm:h-[620px] rounded-[46px] border-[9px] border-slate-900 bg-slate-900 shadow-2xl ring-4 ring-slate-300/80 flex flex-col relative overflow-hidden shrink-0 my-auto transition-all">
                       {/* Mobile Top Speaker & Dynamic Island */}
-                      {isMobilePlayer && (
-                        <div className="w-full bg-slate-900 px-6 py-2 flex items-center justify-between text-[10px] text-white font-semibold select-none z-30 relative shrink-0">
-                          <span>9:41</span>
-                          <div className="w-24 h-4 bg-black rounded-full flex items-center justify-center">
-                            <span className="w-2 h-2 rounded-full bg-blue-400 animate-ping mr-1" />
-                          </div>
-                          <div className="flex items-center gap-1.5 text-[9px]">
-                            <span>5G</span>
-                            <span className="w-3.5 h-2 border border-white rounded-xs inline-block" />
-                          </div>
+                      <div className="w-full bg-slate-900 px-6 py-2 flex items-center justify-between text-[10px] text-white font-semibold select-none z-30 relative shrink-0">
+                        <span>9:41</span>
+                        <div className="w-24 h-4 bg-black rounded-full flex items-center justify-center">
+                          <span className="w-2 h-2 rounded-full bg-blue-400 animate-ping mr-1" />
                         </div>
-                      )}
-
-                      {/* Desktop Browser Header Chrome */}
-                      {!isMobilePlayer && (
-                        <div className="w-full bg-slate-100 px-3 py-1.5 border-b border-slate-200 flex items-center justify-between text-xs text-slate-600 select-none z-30 shrink-0">
-                          <div className="flex items-center gap-2">
-                            <div className="flex items-center gap-1">
-                              <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
-                              <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-                              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-                            </div>
-                            <span className="text-[11px] font-semibold text-slate-700 bg-white px-2.5 py-0.5 rounded-md border border-slate-200 shadow-2xs">
-                              Valavan Academy • Desktop Preview
-                            </span>
-                          </div>
-                          <span className="text-[10px] font-mono text-slate-400">
-                            1440 × 900 Desktop
-                          </span>
+                        <div className="flex items-center gap-1.5 text-[9px]">
+                          <span>5G</span>
+                          <span className="w-3.5 h-2 border border-white rounded-xs inline-block" />
                         </div>
-                      )}
+                      </div>
 
                       {/* VIRTUAL CURSOR / TOUCH POINTER OVERLAY (Simulated Replay) */}
                       {!isInteractiveMode && (
@@ -1507,25 +1485,14 @@ export default function SessionRecordingsClient({
                             transform: 'translate(-50%, -50%)',
                           }}
                         >
-                          {/* Touch Ring or Mouse Pointer */}
                           <div className="relative">
-                            {isMobilePlayer ? (
-                              <div
-                                className={`w-10 h-10 rounded-full border-2 border-[#1748BB] bg-blue-500/30 backdrop-blur-xs flex items-center justify-center transition-all ${
-                                  isClickingNow ? 'scale-140 bg-emerald-500/50 ring-8 ring-emerald-400/30' : 'scale-100'
-                                }`}
-                              >
-                                <span className="w-2.5 h-2.5 rounded-full bg-[#1748BB] shadow-sm" />
-                              </div>
-                            ) : (
-                              <div className="relative">
-                                <MousePointer
-                                  className={`w-6 h-6 text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] fill-[#1748BB] transition-transform ${
-                                    isClickingNow ? 'scale-130 -translate-y-1 fill-emerald-600' : ''
-                                  }`}
-                                />
-                              </div>
-                            )}
+                            <div
+                              className={`w-10 h-10 rounded-full border-2 border-[#1748BB] bg-blue-500/30 backdrop-blur-xs flex items-center justify-center transition-all ${
+                                isClickingNow ? 'scale-140 bg-emerald-500/50 ring-8 ring-emerald-400/30' : 'scale-100'
+                              }`}
+                            >
+                              <span className="w-2.5 h-2.5 rounded-full bg-[#1748BB] shadow-sm" />
+                            </div>
 
                             {/* Floating Click / Action Bubble */}
                             {isClickingNow && (
@@ -1554,17 +1521,89 @@ export default function SessionRecordingsClient({
                       </div>
 
                       {/* Mobile Bottom Home Indicator Bar */}
-                      {isMobilePlayer && (
-                        <div className="w-full bg-slate-900 py-1 flex items-center justify-center shrink-0 z-30">
-                          <div className="w-28 h-1 bg-slate-400/60 rounded-full" />
+                      <div className="w-full bg-slate-900 py-1.5 flex items-center justify-center shrink-0 z-30">
+                        <div className="w-28 h-1 bg-slate-400/60 rounded-full" />
+                      </div>
+
+                      {/* LIVE INTERACTION BADGE OVERLAY */}
+                      <div className="absolute bottom-4 left-3 right-3 z-30 pointer-events-none flex justify-between items-center text-[10px]">
+                        <span className="bg-white/95 backdrop-blur-md text-[#1748BB] font-bold px-2.5 py-0.5 rounded-md border border-slate-200 shadow-xs flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          <span>Mobile 375px Live View</span>
+                        </span>
+                        <span className="bg-white/95 backdrop-blur-md text-slate-700 font-mono px-2 py-0.5 rounded-md border border-slate-200 shadow-xs font-semibold">
+                          {formatDuration(currentPlayTime)} / {formatDuration(watchingRecording.session_duration)}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    /* ── AUTHENTIC FULL DESKTOP WIDESCREEN BROWSER FRAME ── */
+                    <div className="w-full h-full min-h-[480px] sm:min-h-[540px] rounded-2xl border-2 border-slate-300 bg-white shadow-xl flex flex-col overflow-hidden relative">
+                      {/* Desktop Browser Header Chrome */}
+                      <div className="w-full bg-slate-100 px-3 py-1.5 border-b border-slate-200 flex items-center justify-between text-xs text-slate-600 select-none z-30 shrink-0">
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1">
+                            <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                            <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                          </div>
+                          <span className="text-[11px] font-semibold text-slate-700 bg-white px-2.5 py-0.5 rounded-md border border-slate-200 shadow-2xs">
+                            Valavan Academy • Desktop Preview
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-mono text-slate-400">
+                          1440 × 900 Desktop
+                        </span>
+                      </div>
+
+                      {/* VIRTUAL CURSOR (Simulated Replay) */}
+                      {!isInteractiveMode && (
+                        <div
+                          className="absolute z-40 pointer-events-none transition-all duration-300 ease-out"
+                          style={{
+                            left: `${cursorPos.x}%`,
+                            top: `${cursorPos.y}%`,
+                            transform: 'translate(-50%, -50%)',
+                          }}
+                        >
+                          <div className="relative">
+                            <MousePointer
+                              className={`w-6 h-6 text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] fill-[#1748BB] transition-transform ${
+                                isClickingNow ? 'scale-130 -translate-y-1 fill-emerald-600' : ''
+                              }`}
+                            />
+
+                            {/* Floating Click / Action Bubble */}
+                            {isClickingNow && (
+                              <div className="absolute left-6 -top-3 bg-emerald-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-lg whitespace-nowrap animate-bounce flex items-center gap-1">
+                                <Sparkles className="w-3 h-3" />
+                                <span>Action Clicked</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       )}
+
+                      {/* ── REAL LIVE WEBPAGE IFRAME (EXACT CONNECTED WEBSITE) ── */}
+                      <div
+                        className="w-full flex-1 overflow-hidden relative bg-white"
+                        style={{ scrollbarWidth: 'none' }}
+                      >
+                        <iframe
+                          src={activeUrl}
+                          className={`w-full h-full border-0 ${
+                            isInteractiveMode ? 'pointer-events-auto' : 'pointer-events-none'
+                          }`}
+                          title="Live Session Webpage Recording"
+                          loading="lazy"
+                        />
+                      </div>
 
                       {/* LIVE INTERACTION BADGE OVERLAY */}
                       <div className="absolute bottom-3 left-3 right-3 z-30 pointer-events-none flex justify-between items-center text-[10px]">
                         <span className="bg-white/95 backdrop-blur-md text-[#1748BB] font-bold px-2.5 py-0.5 rounded-md border border-slate-200 shadow-xs flex items-center gap-1">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                          <span>{isMobilePlayer ? 'Mobile 375px Live View' : 'Desktop 1440px Live View'}</span>
+                          <span>Desktop 1440px Live View</span>
                         </span>
                         <span className="bg-white/95 backdrop-blur-md text-slate-700 font-mono px-2 py-0.5 rounded-md border border-slate-200 shadow-xs font-semibold">
                           {formatDuration(currentPlayTime)} / {formatDuration(watchingRecording.session_duration)}
