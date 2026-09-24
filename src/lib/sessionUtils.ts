@@ -34,6 +34,7 @@ export interface SessionRecordingItem {
   dead_click_count: number
   status: 'Healthy' | 'Incomplete' | 'Expired' | 'Unavailable'
   created_at: string
+  session_insights?: string[]
   timeline_events?: TimelineEvent[]
 }
 

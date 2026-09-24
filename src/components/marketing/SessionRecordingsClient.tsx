@@ -1780,28 +1780,64 @@ export default function SessionRecordingsClient({
                   </div>
                 </div>
 
+                {/* AI Session Insights (Matching Microsoft Clarity) */}
+                {watchingRecording.session_insights && watchingRecording.session_insights.length > 0 && (
+                  <div className="bg-gradient-to-br from-indigo-50/80 via-blue-50/50 to-white p-3.5 rounded-2xl border border-blue-200/80 text-[11px] text-slate-700 space-y-2 mt-3 shadow-2xs">
+                    <div className="flex items-center justify-between pb-1.5 border-b border-blue-200/60">
+                      <span className="text-[10px] font-bold text-indigo-900 uppercase tracking-wider flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>Clarity Session Insights</span>
+                      </span>
+                      <span className="text-[9px] font-semibold text-indigo-700 bg-white px-2 py-0.5 rounded-full border border-indigo-200 shadow-2xs">
+                        Clarity AI
+                      </span>
+                    </div>
+                    <div className="space-y-1.5 text-[11px] text-slate-600 leading-relaxed">
+                      {watchingRecording.session_insights.map((insight, idx) => (
+                        <p key={idx} className="flex items-start gap-1.5">
+                          <span className="text-indigo-600 font-bold shrink-0 mt-0.5">•</span>
+                          <span>{insight}</span>
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Session Telemetry Highlights Box */}
-                <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-[11px] text-slate-600 space-y-2 mt-4 shadow-2xs">
-                  <div className="text-[10px] font-bold text-slate-800 uppercase tracking-wider pb-1.5 border-b border-slate-200">
-                    Session Summary
+                <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-[11px] text-slate-600 space-y-2 mt-3 shadow-2xs">
+                  <div className="text-[10px] font-bold text-slate-800 uppercase tracking-wider pb-1.5 border-b border-slate-200 flex items-center justify-between">
+                    <span>Session Telemetry</span>
+                    <span className="font-mono text-slate-500 font-bold">{watchingRecording.visitor_id}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-[11px] py-1">
+                    <div>
+                      <span className="text-[10px] text-slate-400 block">Total Duration:</span>
+                      <strong className="text-slate-900 font-mono font-bold">{formatDuration(watchingRecording.session_duration)}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block">Total Clicks:</span>
+                      <strong className="text-[#1748BB] font-mono font-bold">{watchingRecording.click_count} clicks</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block">Pages Visited:</span>
+                      <strong className="text-slate-900 font-mono font-bold">{watchingRecording.pages_viewed} pages</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block">Max Scroll:</span>
+                      <strong className="text-emerald-700 font-mono font-bold">{watchingRecording.scroll_depth}%</strong>
+                    </div>
+                  </div>
+                  <div className="flex justify-between border-t border-slate-200 pt-1.5">
+                    <span>Entry Page:</span>
+                    <strong className="text-slate-900 font-mono truncate max-w-[150px] font-bold">{watchingRecording.landing_page}</strong>
                   </div>
                   <div className="flex justify-between">
-                    <span>Total Clicks:</span>
-                    <strong className="text-slate-900 font-mono font-bold">{watchingRecording.click_count}</strong>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Max Scroll Depth:</span>
-                    <strong className="text-[#1748BB] font-mono font-bold">{watchingRecording.scroll_depth}%</strong>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Rage Clicks:</span>
-                    <strong className={watchingRecording.rage_click_count > 0 ? 'text-rose-600 font-mono font-bold' : 'text-slate-500 font-mono'}>
-                      {watchingRecording.rage_click_count}
-                    </strong>
+                    <span>Exit Page:</span>
+                    <strong className="text-slate-900 font-mono truncate max-w-[150px] font-bold">{watchingRecording.exit_page}</strong>
                   </div>
                   <div className="flex justify-between">
                     <span>Traffic Source:</span>
-                    <strong className="text-purple-700 font-mono truncate max-w-[130px] font-bold">
+                    <strong className="text-purple-700 font-mono truncate max-w-[150px] font-bold">
                       {watchingRecording.utm_source || watchingRecording.referrer || 'Direct'}
                     </strong>
                   </div>
