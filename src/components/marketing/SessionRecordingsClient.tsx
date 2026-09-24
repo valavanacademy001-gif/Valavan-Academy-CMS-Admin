@@ -14,7 +14,7 @@ import {
   BarChart3, Activity, ArrowRight, RotateCcw,
   SkipBack, SkipForward, Compass, Mouse, Navigation,
   ChevronUp, CheckCircle, MessageCircle, Star, Phone,
-  Tv, Layout
+  Tv, Layout, PlayCircle
 } from 'lucide-react'
 import {
   SessionRecordingItem,
@@ -92,12 +92,27 @@ export default function SessionRecordingsClient({
   const [isPlaying, setIsPlaying] = useState(true)
   const [currentPlayTime, setCurrentPlayTime] = useState(0)
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1)
-  const [replayDeviceMode, setReplayDeviceMode] = useState<'auto' | 'mobile' | 'desktop'>('auto')
-  const [replayTab, setReplayTab] = useState<'visual' | 'clarity'>('visual')
+  const [replayDeviceMode, setReplayDeviceMode] = useState<'mobile' | 'desktop'>('mobile')
+  const [previewMode, setPreviewMode] = useState<'iframe' | 'clarity'>('iframe')
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
   // Scroll Container Ref for simulated web replay
   const previewScrollRef = useRef<HTMLDivElement>(null)
+
+  // Maximize modal state
+  const [isMaximized, setIsMaximized] = useState<boolean>(false)
+  const [isInteractiveMode, setIsInteractiveMode] = useState<boolean>(false)
+  const [desktopScaleMode, setDesktopScaleMode] = useState<'responsive' | 'hd'>('responsive')
+
+  // Helper to normalize web preview URL
+  const getNormalizedWebUrl = useCallback((path: string) => {
+    if (!path || path === '/') return 'https://www.valavanacademy.com/'
+    let clean = path.trim()
+    if (!clean.startsWith('/')) clean = '/' + clean
+    if (clean === '/programs/90-days-graphic-design-mentorship') clean = '/programs/90-days-graphic-design'
+    if (clean === '/workshop' || clean === '/3-hours-live-workshop') clean = '/programs/3-hours-live-workshop'
+    return `https://www.valavanacademy.com${clean}`
+  }, [])
 
   // Computed Timeline events for current playing session
   const currentTimelineEvents = useMemo(() => {
@@ -128,7 +143,6 @@ export default function SessionRecordingsClient({
     const totalDur = watchingRecording.session_duration || 1
     const progress = Math.min(1, currentPlayTime / totalDur)
     const maxScroll = watchingRecording.scroll_depth || 85
-    // Natural easing for progressive scrolling
     const eased = Math.min(1, Math.pow(progress, 0.75))
     return Math.min(maxScroll, Math.round(eased * maxScroll))
   }, [watchingRecording, currentPlayTime])
@@ -137,12 +151,11 @@ export default function SessionRecordingsClient({
   const cursorPos = useMemo(() => {
     if (!watchingRecording) return { x: 50, y: 50 }
     const time = currentPlayTime
-    // Natural floating coordinates based on timeline and current time
-    const baseX = 45 + Math.sin(time * 0.8) * 22
-    const baseY = 35 + Math.cos(time * 0.6) * 25
+    const baseX = 48 + Math.sin(time * 0.7) * 20
+    const baseY = 40 + Math.cos(time * 0.5) * 22
     return {
-      x: Math.max(15, Math.min(85, Math.round(baseX))),
-      y: Math.max(20, Math.min(80, Math.round(baseY))),
+      x: Math.max(18, Math.min(82, Math.round(baseX))),
+      y: Math.max(22, Math.min(78, Math.round(baseY))),
     }
   }, [watchingRecording, currentPlayTime])
 
@@ -172,21 +185,6 @@ export default function SessionRecordingsClient({
     }
     return () => clearInterval(timer)
   }, [watchingRecording, isPlaying, playbackSpeed])
-
-  // Auto-scroll the preview container smoothly in sync with playback
-  useEffect(() => {
-    if (previewScrollRef.current) {
-      const el = previewScrollRef.current
-      const scrollHeight = el.scrollHeight - el.clientHeight
-      if (scrollHeight > 0) {
-        const targetTop = (currentScrollPercent / 100) * scrollHeight
-        el.scrollTo({
-          top: targetTop,
-          behavior: 'smooth',
-        })
-      }
-    }
-  }, [currentScrollPercent])
 
   // Copy helper
   const copySessionId = (id: string) => {
@@ -443,7 +441,8 @@ export default function SessionRecordingsClient({
     setCurrentPlayTime(0)
     setIsPlaying(true)
     setPlaybackSpeed(1)
-    setReplayTab('visual')
+    setReplayDeviceMode(rec.device_type === 'Mobile' ? 'mobile' : 'desktop')
+    setPreviewMode('iframe')
   }
 
   // Export to CSV
@@ -660,10 +659,8 @@ export default function SessionRecordingsClient({
     ? `https://clarity.microsoft.com/projects/view/${projectId}`
     : 'https://clarity.microsoft.com/'
 
-  // Effective device frame to display in the player
-  const isMobilePlayer =
-    replayDeviceMode === 'mobile' ||
-    (replayDeviceMode === 'auto' && watchingRecording?.device_type === 'Mobile')
+  const isMobilePlayer = replayDeviceMode === 'mobile'
+  const activeUrl = watchingRecording ? getNormalizedWebUrl(watchingRecording.landing_page) : 'https://www.valavanacademy.com/'
 
   return (
     <div className="space-y-6">
@@ -740,7 +737,7 @@ export default function SessionRecordingsClient({
               <button
                 type="button"
                 onClick={handleDisconnectClarity}
-                className="p-2 rounded-xl border border-gray-200 hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors"
+                className="p-2 rounded-xl border border-gray-200 hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors cursor-pointer"
                 title="Disconnect Clarity"
               >
                 <X className="w-4 h-4" />
@@ -1254,10 +1251,14 @@ export default function SessionRecordingsClient({
 
       {/* ── HIGH-DEFINITION WHITE THEME VISUAL REPLAY MODAL ────────────────────────── */}
       {watchingRecording && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 md:p-6 animate-in fade-in duration-200">
-          <div className="bg-white text-slate-900 rounded-3xl max-w-6xl w-full max-h-[94vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+        <div className={`fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 md:p-6 animate-in fade-in duration-200 ${
+          isMaximized ? 'p-0!' : ''
+        }`}>
+          <div className={`bg-white text-slate-900 rounded-3xl w-full flex flex-col shadow-2xl border border-slate-200 overflow-hidden transition-all duration-200 ${
+            isMaximized ? 'h-full max-h-full rounded-none border-0' : 'max-w-6xl max-h-[94vh]'
+          }`}>
             {/* Modal Header */}
-            <div className="p-4 bg-white border-b border-slate-100 flex items-center justify-between gap-3 shadow-2xs">
+            <div className="p-4 bg-white border-b border-slate-100 flex items-center justify-between gap-3 shadow-2xs shrink-0">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-2xl bg-[#1748BB] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-md">
                   <Play className="w-4 h-4 fill-white" />
@@ -1267,7 +1268,7 @@ export default function SessionRecordingsClient({
                     <h3 className="font-bold text-base text-slate-900 truncate">
                       Session Replay: {watchingRecording.visitor_id}
                     </h3>
-                    <span className="text-[10px] font-bold bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-full border border-blue-200 shrink-0">
+                    <span className="text-[10px] font-bold bg-blue-50 text-[#1748BB] px-2.5 py-0.5 rounded-full border border-blue-200 shrink-0">
                       {watchingRecording.device_type} • {watchingRecording.browser}
                     </span>
                     <span className="text-[10px] font-bold bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-full border border-emerald-200 hidden sm:inline shrink-0">
@@ -1276,46 +1277,99 @@ export default function SessionRecordingsClient({
                   </div>
                   <p className="text-[11px] text-slate-500 truncate flex items-center gap-1.5 mt-0.5">
                     <Globe className="w-3 h-3 text-slate-400 shrink-0" />
-                    <span className="font-mono">https://valavanacademy.com{watchingRecording.landing_page}</span>
+                    <span className="font-mono text-slate-700">{activeUrl}</span>
                   </p>
                 </div>
               </div>
 
-              {/* Top Controls & Direct Clarity Button */}
+              {/* Top Controls: Viewport mode switcher & Clarity buttons */}
               <div className="flex items-center gap-2 shrink-0">
-                {/* Viewport mode toggle */}
-                <div className="hidden sm:flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600">
+                {/* Viewport mode toggle (Mobile vs Desktop vs Clarity Studio) */}
+                <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600">
                   <button
                     type="button"
-                    onClick={() => setReplayDeviceMode('mobile')}
+                    onClick={() => {
+                      setReplayDeviceMode('mobile')
+                      setPreviewMode('iframe')
+                    }}
                     className={`px-3 py-1 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
-                      isMobilePlayer ? 'bg-white text-[#1748BB] font-bold shadow-xs' : 'hover:text-slate-900'
+                      isMobilePlayer && previewMode === 'iframe'
+                        ? 'bg-white text-[#1748BB] font-bold shadow-xs'
+                        : 'hover:text-slate-900'
                     }`}
                   >
                     <Smartphone className="w-3.5 h-3.5" />
-                    <span>Mobile</span>
+                    <span>Mobile Size</span>
                   </button>
                   <button
                     type="button"
-                    onClick={() => setReplayDeviceMode('desktop')}
+                    onClick={() => {
+                      setReplayDeviceMode('desktop')
+                      setPreviewMode('iframe')
+                    }}
                     className={`px-3 py-1 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
-                      !isMobilePlayer ? 'bg-white text-[#1748BB] font-bold shadow-xs' : 'hover:text-slate-900'
+                      !isMobilePlayer && previewMode === 'iframe'
+                        ? 'bg-white text-[#1748BB] font-bold shadow-xs'
+                        : 'hover:text-slate-900'
                     }`}
                   >
                     <Monitor className="w-3.5 h-3.5" />
-                    <span>Desktop</span>
+                    <span>Desktop Size</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPreviewMode('clarity')
+                    }}
+                    className={`px-3 py-1 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+                      previewMode === 'clarity'
+                        ? 'bg-white text-purple-700 font-bold shadow-xs'
+                        : 'hover:text-slate-900'
+                    }`}
+                  >
+                    <Video className="w-3.5 h-3.5 text-purple-600" />
+                    <span>Clarity Studio</span>
                   </button>
                 </div>
 
+                {/* Interactive Mode Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setIsInteractiveMode(!isInteractiveMode)}
+                  className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-colors cursor-pointer ${
+                    isInteractiveMode
+                      ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+                  title="Toggle interactive mode to click and browse inside preview"
+                >
+                  <Mouse className="w-3.5 h-3.5" />
+                  <span>{isInteractiveMode ? 'Interactive On' : 'Simulated Replay'}</span>
+                </button>
+
+                {/* Direct Open in Clarity Studio Button */}
                 <a
                   href={`${clarityBaseUrl}/recordings`}
                   target="_blank"
                   rel="noreferrer"
                   className="btn-primary py-2 px-3.5 text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
+                  title="Open Microsoft Clarity recording studio"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Open in Clarity</span>
                 </a>
+
+                {/* Maximize Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setIsMaximized(!isMaximized)}
+                  className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer hidden sm:block"
+                  title={isMaximized ? 'Restore window' : 'Maximize window'}
+                >
+                  <Maximize2 className="w-4 h-4" />
+                </button>
+
+                {/* Close Button */}
                 <button
                   type="button"
                   onClick={() => setWatchingRecording(null)}
@@ -1340,232 +1394,184 @@ export default function SessionRecordingsClient({
                     </div>
                     <Lock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                     <span className="text-slate-800 font-medium truncate">
-                      https://valavanacademy.com{watchingRecording.landing_page}
+                      {activeUrl}
                     </span>
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="text-[10px] font-bold text-[#1748BB] bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200 font-sans">
-                      Scroll Depth: {currentScrollPercent}%
+                      Scroll: {currentScrollPercent}%
+                    </span>
+                    <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full font-sans hidden sm:inline">
+                      {isMobilePlayer ? '375px Mobile Viewport' : 'Desktop Browser Viewport'}
                     </span>
                   </div>
                 </div>
 
-                {/* ── INTERACTIVE WEBPAGE VIEWPORT CONTAINER ── */}
-                <div className="flex-1 min-h-[400px] max-h-[500px] sm:max-h-[530px] bg-slate-100/80 rounded-2xl border border-slate-200/80 relative flex items-center justify-center overflow-hidden p-2 sm:p-3 shadow-inner">
-                  {/* DEVICE FRAME */}
-                  <div
-                    className={`h-full transition-all duration-300 relative shadow-xl overflow-hidden bg-white text-slate-900 flex flex-col ${
-                      isMobilePlayer
-                        ? 'w-[320px] sm:w-[350px] rounded-[36px] border-[6px] border-slate-800 ring-4 ring-slate-200'
-                        : 'w-full rounded-2xl border border-slate-300 ring-2 ring-slate-100'
-                    }`}
-                  >
-                    {/* Mobile Notch & Dynamic Island Header */}
-                    {isMobilePlayer && (
-                      <div className="w-full bg-slate-900 px-5 py-1.5 flex items-center justify-between text-[10px] text-white font-semibold select-none z-30 relative shrink-0">
-                        <span>9:41</span>
-                        <div className="w-20 h-3.5 bg-black rounded-full flex items-center justify-center">
-                          <span className="w-2 h-2 rounded-full bg-blue-400 animate-ping mr-1" />
+                {/* ── INTERACTIVE WEBPAGE VIEWPORT CONTAINER (MOBILE OR DESKTOP SIZE) ── */}
+                <div className="flex-1 min-h-[420px] max-h-[540px] sm:max-h-[580px] bg-slate-200/70 rounded-2xl border border-slate-300/80 relative flex items-center justify-center overflow-hidden p-2 sm:p-4 shadow-inner">
+                  {previewMode === 'clarity' ? (
+                    /* ── CLARITY STUDIO STREAM CARD ── */
+                    <div className="w-full max-w-xl bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-xl text-center space-y-4 animate-in fade-in duration-300">
+                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center mx-auto shadow-md">
+                        <Video className="w-7 h-7 fill-white/20" />
+                      </div>
+                      <div>
+                        <h4 className="text-base font-bold text-slate-900">
+                          Microsoft Clarity Session Studio Replay
+                        </h4>
+                        <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                          Microsoft Clarity records 1080p full DOM video replays with authentic user cursor paths, rage clicks, and heatmaps for this visitor session.
+                        </p>
+                      </div>
+
+                      <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 grid grid-cols-2 gap-2 text-left text-xs">
+                        <div>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase block">Clarity Project</span>
+                          <span className="font-mono font-bold text-[#1748BB]">{projectId || 'ymogx7tv3i'}</span>
                         </div>
-                        <div className="flex items-center gap-1 text-[9px]">
-                          <span>5G</span>
-                          <span className="w-3.5 h-2 border border-white rounded-xs inline-block" />
+                        <div>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase block">Visitor ID</span>
+                          <span className="font-mono font-bold text-slate-800 truncate block">{watchingRecording.visitor_id}</span>
                         </div>
                       </div>
-                    )}
 
-                    {/* VIRTUAL CURSOR / TOUCH POINTER OVERLAY */}
-                    <div
-                      className="absolute z-40 pointer-events-none transition-all duration-300 ease-out"
-                      style={{
-                        left: `${cursorPos.x}%`,
-                        top: `${cursorPos.y}%`,
-                        transform: 'translate(-50%, -50%)',
-                      }}
-                    >
-                      {/* Touch Ring or Mouse Pointer */}
-                      <div className="relative">
-                        {isMobilePlayer ? (
-                          <div
-                            className={`w-9 h-9 rounded-full border-2 border-[#1748BB] bg-blue-500/30 backdrop-blur-xs flex items-center justify-center transition-all ${
-                              isClickingNow ? 'scale-140 bg-emerald-500/50 ring-8 ring-emerald-400/30' : 'scale-100'
-                            }`}
-                          >
-                            <span className="w-2.5 h-2.5 rounded-full bg-[#1748BB] shadow-sm" />
-                          </div>
-                        ) : (
-                          <div className="relative">
-                            <MousePointer
-                              className={`w-6 h-6 text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] fill-[#1748BB] transition-transform ${
-                                isClickingNow ? 'scale-130 -translate-y-1 fill-emerald-600' : ''
-                              }`}
-                            />
-                          </div>
-                        )}
-
-                        {/* Floating Click / Action Bubble */}
-                        {isClickingNow && (
-                          <div className="absolute left-6 -top-3 bg-emerald-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-lg whitespace-nowrap animate-bounce flex items-center gap-1">
-                            <Sparkles className="w-3 h-3" />
-                            <span>Action Clicked</span>
-                          </div>
-                        )}
+                      <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                        <a
+                          href={`${clarityBaseUrl}/recordings`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="btn-primary py-2.5 px-5 text-xs font-bold w-full sm:w-auto flex items-center justify-center gap-2 shadow-md cursor-pointer"
+                        >
+                          <Play className="w-3.5 h-3.5 fill-white" />
+                          <span>Watch Full Video on Clarity Studio</span>
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => setPreviewMode('iframe')}
+                          className="btn-secondary py-2.5 px-4 text-xs font-semibold w-full sm:w-auto cursor-pointer"
+                        >
+                          Switch to Live Site View
+                        </button>
                       </div>
                     </div>
-
-                    {/* ── REALISTIC WEBPAGE SCROLLABLE CONTENT ── */}
+                  ) : (
+                    /* ── AUTHENTIC DEVICE FRAME (MOBILE 375px OR DESKTOP 100%) ── */
                     <div
-                      ref={previewScrollRef}
-                      className="w-full flex-1 overflow-y-auto select-none font-sans scroll-smooth text-left text-slate-900 bg-white"
-                      style={{ scrollbarWidth: 'none' }}
+                      className={`h-full transition-all duration-300 relative shadow-2xl overflow-hidden bg-white text-slate-900 flex flex-col ${
+                        isMobilePlayer
+                          ? 'w-[360px] sm:w-[375px] rounded-[44px] border-[10px] border-slate-900 ring-4 ring-slate-300/80'
+                          : 'w-full rounded-2xl border-2 border-slate-400/80 ring-2 ring-slate-200'
+                      }`}
                     >
-                      {/* 1. Header Navigation */}
-                      <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-slate-100 px-4 py-3 flex items-center justify-between shadow-2xs">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-lg bg-[#1748BB] text-white flex items-center justify-center font-black text-xs">
-                            VA
+                      {/* Mobile Top Speaker & Dynamic Island */}
+                      {isMobilePlayer && (
+                        <div className="w-full bg-slate-900 px-6 py-2 flex items-center justify-between text-[10px] text-white font-semibold select-none z-30 relative shrink-0">
+                          <span>9:41</span>
+                          <div className="w-24 h-4 bg-black rounded-full flex items-center justify-center">
+                            <span className="w-2 h-2 rounded-full bg-blue-400 animate-ping mr-1" />
                           </div>
-                          <span className="font-extrabold text-xs tracking-tight text-slate-900">
-                            Valavan Academy
+                          <div className="flex items-center gap-1.5 text-[9px]">
+                            <span>5G</span>
+                            <span className="w-3.5 h-2 border border-white rounded-xs inline-block" />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Desktop Browser Header Chrome */}
+                      {!isMobilePlayer && (
+                        <div className="w-full bg-slate-100 px-3 py-1.5 border-b border-slate-200 flex items-center justify-between text-xs text-slate-600 select-none z-30 shrink-0">
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1">
+                              <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                              <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                            </div>
+                            <span className="text-[11px] font-semibold text-slate-700 bg-white px-2.5 py-0.5 rounded-md border border-slate-200 shadow-2xs">
+                              Valavan Academy • Desktop Preview
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-mono text-slate-400">
+                            1440 × 900 Desktop
                           </span>
                         </div>
-                        <span className="px-2.5 py-1 rounded-full bg-blue-50 text-[#1748BB] font-bold text-[10px] border border-blue-200">
-                          Tamil Mentorship
-                        </span>
-                      </header>
+                      )}
 
-                      {/* 2. Hero Section */}
-                      <section className="p-4 sm:p-5 bg-gradient-to-b from-blue-50/50 via-white to-white space-y-3.5">
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-100 text-[#1748BB] text-[10px] font-extrabold uppercase tracking-wider">
-                          <Sparkles className="w-3 h-3 text-[#1748BB]" />
-                          <span>100% Practical Mentorship</span>
-                        </div>
-
-                        <h2 className="text-base sm:text-lg font-black text-slate-950 leading-snug tracking-tight">
-                          {watchingRecording.landing_page.includes('full-stack')
-                            ? 'Full Stack Digital Creator Masterclass'
-                            : watchingRecording.landing_page.includes('3-hours') || watchingRecording.landing_page.includes('workshop')
-                            ? '3-Hours Live Design & AI Workshop'
-                            : '90-Day Graphic Design Mastery Program'}
-                        </h2>
-
-                        <p className="text-xs text-slate-600 leading-relaxed">
-                          Master Photoshop, Illustrator, Video Editing, AI Design & Freelancing with 1-on-1 Tamil Mentorship.
-                        </p>
-
-                        {/* Video / Showcase Banner */}
-                        <div className="w-full h-36 rounded-2xl bg-gradient-to-br from-[#1748BB] via-blue-900 to-indigo-950 text-white p-3.5 flex flex-col justify-between shadow-sm relative overflow-hidden">
-                          <div className="flex justify-between items-center text-[10px] text-blue-200">
-                            <span>⭐ 4.9/5 Rating (850+ Learners)</span>
-                            <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-white font-bold text-[9px]">ENROLLING</span>
-                          </div>
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center">
-                              <Play className="w-4 h-4 fill-white text-white" />
-                            </div>
-                            <div>
-                              <div className="text-xs font-bold leading-tight">
-                                Watch Roadmap & Outcomes Video
+                      {/* VIRTUAL CURSOR / TOUCH POINTER OVERLAY (Simulated Replay) */}
+                      {!isInteractiveMode && (
+                        <div
+                          className="absolute z-40 pointer-events-none transition-all duration-300 ease-out"
+                          style={{
+                            left: `${cursorPos.x}%`,
+                            top: `${cursorPos.y}%`,
+                            transform: 'translate(-50%, -50%)',
+                          }}
+                        >
+                          {/* Touch Ring or Mouse Pointer */}
+                          <div className="relative">
+                            {isMobilePlayer ? (
+                              <div
+                                className={`w-10 h-10 rounded-full border-2 border-[#1748BB] bg-blue-500/30 backdrop-blur-xs flex items-center justify-center transition-all ${
+                                  isClickingNow ? 'scale-140 bg-emerald-500/50 ring-8 ring-emerald-400/30' : 'scale-100'
+                                }`}
+                              >
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#1748BB] shadow-sm" />
                               </div>
-                              <div className="text-[9px] text-blue-200 mt-0.5">Learn by building real client projects</div>
-                            </div>
+                            ) : (
+                              <div className="relative">
+                                <MousePointer
+                                  className={`w-6 h-6 text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] fill-[#1748BB] transition-transform ${
+                                    isClickingNow ? 'scale-130 -translate-y-1 fill-emerald-600' : ''
+                                  }`}
+                                />
+                              </div>
+                            )}
+
+                            {/* Floating Click / Action Bubble */}
+                            {isClickingNow && (
+                              <div className="absolute left-6 -top-3 bg-emerald-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-lg whitespace-nowrap animate-bounce flex items-center gap-1">
+                                <Sparkles className="w-3 h-3" />
+                                <span>Action Clicked</span>
+                              </div>
+                            )}
                           </div>
-                          <div className="text-[10px] text-blue-300 font-medium">Limited Seats • Live Interactive Batches</div>
                         </div>
+                      )}
 
-                        {/* CTA Button with Highlight Ring */}
-                        <div className="pt-2">
-                          <div
-                            className={`w-full py-2.5 px-4 rounded-xl bg-[#1748BB] text-white text-xs font-bold text-center shadow-md flex items-center justify-center gap-2 transition-all ${
-                              isClickingNow ? 'ring-4 ring-emerald-400 bg-emerald-600 scale-102 shadow-lg' : ''
-                            }`}
-                          >
-                            <span>Enroll Now • Reserve Seat</span>
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </div>
-                        </div>
-                      </section>
+                      {/* ── REAL LIVE WEBPAGE IFRAME (EXACT CONNECTED WEBSITE) ── */}
+                      <div
+                        className="w-full flex-1 overflow-hidden relative bg-white"
+                        style={{ scrollbarWidth: 'none' }}
+                      >
+                        <iframe
+                          src={activeUrl}
+                          className={`w-full h-full border-0 ${
+                            isInteractiveMode ? 'pointer-events-auto' : 'pointer-events-none'
+                          }`}
+                          title="Live Session Webpage Recording"
+                          loading="lazy"
+                        />
+                      </div>
 
-                      {/* 3. Program Highlights & Skills */}
-                      <section className="p-4 sm:p-5 space-y-3 bg-white border-t border-slate-100">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                          Tools & Skills You Will Master
+                      {/* Mobile Bottom Home Indicator Bar */}
+                      {isMobilePlayer && (
+                        <div className="w-full bg-slate-900 py-1 flex items-center justify-center shrink-0 z-30">
+                          <div className="w-28 h-1 bg-slate-400/60 rounded-full" />
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          {[
-                            { name: 'Adobe Photoshop', desc: 'Design & Retouching', color: 'bg-blue-50 text-blue-800' },
-                            { name: 'Adobe Illustrator', desc: 'Logos & Vector Art', color: 'bg-amber-50 text-amber-800' },
-                            { name: 'Premiere Pro', desc: 'Video & Reels Editing', color: 'bg-purple-50 text-purple-800' },
-                            { name: 'AI Design Tools', desc: 'Midjourney & Prompting', color: 'bg-emerald-50 text-emerald-800' },
-                          ].map((t, idx) => (
-                            <div key={idx} className={`p-2.5 rounded-xl border border-slate-100 ${t.color}`}>
-                              <div className="font-extrabold text-[11px] leading-tight">{t.name}</div>
-                              <div className="text-[9px] text-slate-500">{t.desc}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </section>
+                      )}
 
-                      {/* 4. Curriculum Modules */}
-                      <section className="p-4 sm:p-5 space-y-3 bg-slate-50/80 border-t border-slate-100">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                          Curriculum Modules & Live Projects
-                        </div>
-                        {[
-                          { title: 'Module 1: Design Fundamentals & Visual Hierarchy', duration: '2 Weeks' },
-                          { title: 'Module 2: Advanced Typography, Color & Branding', duration: '3 Weeks' },
-                          { title: 'Module 3: Commercial Ad Creatives & Social Media', duration: '3 Weeks' },
-                          { title: 'Module 4: Freelance Portfolio & Client Acquisition', duration: '4 Weeks' },
-                        ].map((m, mIdx) => (
-                          <div key={mIdx} className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-2xs flex items-center justify-between text-xs">
-                            <div className="flex items-center gap-2">
-                              <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                              <span className="font-bold text-slate-800 text-[11px]">{m.title}</span>
-                            </div>
-                            <span className="text-[9px] text-slate-400 font-mono shrink-0">{m.duration}</span>
-                          </div>
-                        ))}
-                      </section>
-
-                      {/* 5. Student Reviews */}
-                      <section className="p-4 sm:p-5 space-y-3 bg-white border-t border-slate-100">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                          Learner Outcomes & Reviews
-                        </div>
-                        <div className="bg-amber-50/60 p-3 rounded-xl border border-amber-200 space-y-1 text-xs">
-                          <div className="flex items-center gap-1 text-amber-500">
-                            {'★'.repeat(5)}
-                            <span className="font-bold text-slate-900 text-[11px] ml-1">Karthik R. (Chennai)</span>
-                          </div>
-                          <p className="text-[10px] text-slate-600 italic">
-                            "The best Tamil design mentorship! Landed my first high-paying freelance client within 45 days."
-                          </p>
-                        </div>
-                      </section>
-
-                      {/* 6. Footer */}
-                      <footer className="p-4 bg-slate-900 text-white text-center space-y-2 pb-8">
-                        <div className="font-bold text-xs">Questions? Talk with our team</div>
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-600 text-white font-bold text-[10px]">
-                          <MessageCircle className="w-3 h-3" />
-                          <span>WhatsApp (+91 90800 70624)</span>
-                        </div>
-                        <div className="text-[9px] text-slate-400">© Valavan Academy</div>
-                      </footer>
+                      {/* LIVE INTERACTION BADGE OVERLAY */}
+                      <div className="absolute bottom-3 left-3 right-3 z-30 pointer-events-none flex justify-between items-center text-[10px]">
+                        <span className="bg-white/95 backdrop-blur-md text-[#1748BB] font-bold px-2.5 py-0.5 rounded-md border border-slate-200 shadow-xs flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          <span>{isMobilePlayer ? 'Mobile 375px Live View' : 'Desktop 1440px Live View'}</span>
+                        </span>
+                        <span className="bg-white/95 backdrop-blur-md text-slate-700 font-mono px-2 py-0.5 rounded-md border border-slate-200 shadow-xs font-semibold">
+                          {formatDuration(currentPlayTime)} / {formatDuration(watchingRecording.session_duration)}
+                        </span>
+                      </div>
                     </div>
-
-                    {/* LIVE INTERACTION BADGE OVERLAY */}
-                    <div className="absolute bottom-2 left-2 right-2 z-30 pointer-events-none flex justify-between items-center text-[10px]">
-                      <span className="bg-white/95 backdrop-blur-md text-[#1748BB] font-bold px-2.5 py-0.5 rounded-md border border-slate-200 shadow-xs flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        <span>Interactive Visual Stream</span>
-                      </span>
-                      <span className="bg-white/95 backdrop-blur-md text-slate-700 font-mono px-2 py-0.5 rounded-md border border-slate-200 shadow-xs font-semibold">
-                        {formatDuration(currentPlayTime)} / {formatDuration(watchingRecording.session_duration)}
-                      </span>
-                    </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* ── PLAYER CONTROLS BAR (WHITE THEME) ── */}
@@ -1634,6 +1640,13 @@ export default function SessionRecordingsClient({
                         <span className="text-slate-400"> / {formatDuration(watchingRecording.session_duration)}</span>
                       </div>
                     </div>
+
+                    {/* Active Telemetry Note */}
+                    {activeEvent && (
+                      <div className="text-[11px] text-slate-600 truncate max-w-[280px] hidden md:block">
+                        <span className="font-semibold text-[#1748BB]">Now:</span> {activeEvent.description}
+                      </div>
+                    )}
 
                     {/* Speed Multiplier Controls */}
                     <div className="flex items-center gap-1.5">
