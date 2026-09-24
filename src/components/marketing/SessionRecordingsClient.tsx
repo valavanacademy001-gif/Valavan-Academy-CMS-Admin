@@ -61,9 +61,14 @@ export default function SessionRecordingsClient({
   const [projectId, setProjectId] = useState<string>(clarityProjectId || 'ymogx7tv3i')
   const [isConnected, setIsConnected] = useState<boolean>(clarityConnected || Boolean(clarityProjectId))
   const [isSyncing, setIsSyncing] = useState<boolean>(false)
+  const [isClarityAPISyncing, setIsClarityAPISyncing] = useState<boolean>(false)
   const [lastSyncTime, setLastSyncTime] = useState<string>(new Date().toISOString())
   const [showConnectModal, setShowConnectModal] = useState<boolean>(false)
   const [tempProjectId, setTempProjectId] = useState<string>(clarityProjectId || 'ymogx7tv3i')
+  const [clarityApiToken, setClarityApiToken] = useState<string>('')
+  const [tempApiToken, setTempApiToken] = useState<string>('')
+  const [clarityAPIError, setClarityAPIError] = useState<string>('')
+  const [showApiTokenSection, setShowApiTokenSection] = useState<boolean>(false)
 
   // Recordings & Filter State
   const [recordings, setRecordings] = useState<SessionRecordingItem[]>(() => {
@@ -277,6 +282,81 @@ export default function SessionRecordingsClient({
     await persistSessionData('', false)
     toast.success('Microsoft Clarity disconnected.')
   }
+
+  // Handle Clarity API Sync (real Clarity data via API token)
+  const handleClarityAPISync = useCallback(async (token?: string, pid?: string) => {
+    const useToken = token || clarityApiToken
+    const usePid = pid || projectId || 'ymogx7tv3i'
+
+    if (!useToken.trim()) {
+      setClarityAPIError('Please enter your Clarity API token first.')
+      setShowApiTokenSection(true)
+      return
+    }
+
+    setIsClarityAPISyncing(true)
+    setClarityAPIError('')
+    const startTime = performance.now()
+    toast.info('Fetching real session data from Microsoft Clarity API...')
+
+    try {
+      const res = await fetch('/api/clarity-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiToken: useToken, projectId: usePid, numDays: 3 }),
+      })
+      const result = await res.json()
+
+      if (!res.ok || !result.success) {
+        const errMsg = result.error || 'Clarity API sync failed.'
+        setClarityAPIError(errMsg)
+        toast.error(errMsg)
+        return
+      }
+
+      // Reload recordings from Supabase
+      const supabase = createClient()
+      const { data: sec } = await supabase
+        .from('sections')
+        .select('id')
+        .eq('slug', 'tracking_analytics')
+        .single()
+
+      if (sec) {
+        const { data: fvs } = await supabase
+          .from('field_values')
+          .select('*, field:fields(name)')
+          .eq('section_id', sec.id)
+
+        const recField = fvs?.find((f: any) => f.field?.name === 'session_recordings_data')
+        if (recField) {
+          const raw = recField.published_value_text || recField.value_text
+          if (raw) setRecordings(JSON.parse(raw))
+        }
+      }
+
+      const durationMs = ((performance.now() - startTime) / 1000).toFixed(1) + 's'
+      setLastSyncTime(new Date().toISOString())
+      const newLog: SyncLogItem = {
+        id: `clarity-sync-${Date.now()}`,
+        date: new Date().toISOString(),
+        status: 'Success',
+        records_imported: result.recordCount,
+        errors: 'None',
+        duration: durationMs,
+      }
+      setSyncLogs((prev) => [newLog, ...prev.slice(0, 9)])
+      toast.success(
+        `✓ Synced ${result.recordCount} sessions from Microsoft Clarity API! (${result.clarityMetrics?.totalSessions ?? 0} total sessions found)`
+      )
+    } catch (err: any) {
+      const msg = err.message || 'Network error while calling Clarity API.'
+      setClarityAPIError(msg)
+      toast.error('Clarity API sync failed: ' + msg)
+    } finally {
+      setIsClarityAPISyncing(false)
+    }
+  }, [clarityApiToken, projectId])
 
   // Handle Manual Live Sync with Supabase telemetry & Clarity
   const handleSyncNow = useCallback(async () => {
@@ -717,16 +797,36 @@ export default function SessionRecordingsClient({
                 <span>Sync History</span>
               </button>
 
+              {/* Clarity API Sync button — fetches REAL Clarity data */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (clarityApiToken) {
+                    handleClarityAPISync()
+                  } else {
+                    setShowApiTokenSection(true)
+                    setShowConnectModal(true)
+                  }
+                }}
+                disabled={isClarityAPISyncing}
+                className="py-2 px-3.5 text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer rounded-xl bg-purple-600 hover:bg-purple-700 text-white transition-colors disabled:opacity-60"
+                title="Fetch real recordings data from Microsoft Clarity API"
+              >
+                <Zap className={`w-3.5 h-3.5 ${isClarityAPISyncing ? 'animate-pulse' : ''}`} />
+                <span>{isClarityAPISyncing ? 'Fetching Clarity...' : 'Sync from Clarity API'}</span>
+              </button>
+
               <button
                 type="button"
                 onClick={handleSyncNow}
                 disabled={isSyncing}
                 className="btn-secondary py-2 px-3.5 text-xs font-semibold flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                title="Sync from local telemetry events"
               >
                 <RefreshCw
                   className={`w-3.5 h-3.5 text-[#1748BB] ${isSyncing ? 'animate-spin' : ''}`}
                 />
-                <span>{isSyncing ? 'Syncing...' : 'Sync Now'}</span>
+                <span>{isSyncing ? 'Syncing...' : 'Sync Local Events'}</span>
               </button>
 
               <a
@@ -2086,7 +2186,7 @@ export default function SessionRecordingsClient({
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
           <form
             onSubmit={handleConnectClarity}
-            className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100 space-y-4"
+            className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-gray-100 space-y-4 max-h-[90vh] overflow-y-auto"
           >
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <div className="flex items-center gap-2.5">
@@ -2095,20 +2195,22 @@ export default function SessionRecordingsClient({
                 </div>
                 <div>
                   <h3 className="font-bold text-base text-gray-900">Connect Microsoft Clarity</h3>
-                  <p className="text-xs text-gray-400">Sync and watch session replays inside CMS</p>
+                  <p className="text-xs text-gray-400">Sync real Clarity session data into CMS</p>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => setShowConnectModal(false)}
+                onClick={() => { setShowConnectModal(false); setClarityAPIError('') }}
                 className="p-1 text-gray-400 hover:text-gray-700 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
+            {/* Step 1: Project ID */}
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-700">
+              <label className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-full bg-[#1748BB] text-white text-[10px] font-black flex items-center justify-center">1</span>
                 Microsoft Clarity Project ID *
               </label>
               <input
@@ -2120,31 +2222,86 @@ export default function SessionRecordingsClient({
                 className="input text-xs font-mono"
               />
               <p className="text-[11px] text-gray-400">
-                Find this in your Microsoft Clarity Dashboard under Settings → Overview.
+                Find in Clarity Dashboard → Settings → Overview → Project ID.
               </p>
             </div>
+
+            {/* Step 2: API Token for real Clarity data sync */}
+            <div className="space-y-1 border border-purple-200 bg-purple-50/50 rounded-xl p-3">
+              <label className="text-xs font-semibold text-purple-900 flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-full bg-purple-600 text-white text-[10px] font-black flex items-center justify-center">2</span>
+                Clarity API Token
+                <span className="ml-auto text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-bold border border-purple-200">Required for Real Data Sync</span>
+              </label>
+              <input
+                type="password"
+                value={tempApiToken}
+                onChange={(e) => setTempApiToken(e.target.value)}
+                placeholder="Paste your Clarity API token here..."
+                className="input text-xs font-mono"
+              />
+              <div className="text-[11px] text-purple-700 space-y-1 mt-1">
+                <p className="font-semibold">How to get your API Token:</p>
+                <ol className="list-decimal ml-4 space-y-0.5 text-[10px] text-purple-600">
+                  <li>Go to <strong>clarity.microsoft.com</strong></li>
+                  <li>Open your project → <strong>Settings</strong></li>
+                  <li>Click <strong>Data Export</strong></li>
+                  <li>Click <strong>Generate new API token</strong></li>
+                  <li>Copy & paste the token above</li>
+                </ol>
+              </div>
+            </div>
+
+            {/* Error message */}
+            {clarityAPIError && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                <span>{clarityAPIError}</span>
+              </div>
+            )}
 
             <div className="bg-blue-50 border border-blue-200/80 rounded-xl p-3 text-xs text-blue-900 space-y-1">
-              <span className="font-bold block">Zero-Storage Cloud Sync</span>
-              <p className="text-[11px] text-blue-700 leading-relaxed">
-                Telemetry and visitor interactions are automatically aggregated into session metadata. Full high-definition video replays stream on-demand from Microsoft Clarity.
-              </p>
+              <span className="font-bold block flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> What happens after connecting</span>
+              <ul className="text-[11px] text-blue-700 space-y-0.5 ml-5 list-disc">
+                <li>Real session count, duration & metrics pulled from Clarity</li>
+                <li>Session rows built from Clarity aggregated data</li>
+                <li>Recordings always match what you see in Clarity</li>
+                <li>Video replay opens directly in Clarity Studio</li>
+              </ul>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+            <div className="flex flex-col sm:flex-row items-center gap-2 pt-3 border-t border-gray-100">
               <button
                 type="button"
-                onClick={() => setShowConnectModal(false)}
-                className="btn-secondary py-2 px-4 text-xs font-semibold cursor-pointer"
+                onClick={() => { setShowConnectModal(false); setClarityAPIError('') }}
+                className="btn-secondary py-2 px-4 text-xs font-semibold cursor-pointer w-full sm:w-auto"
               >
                 Cancel
               </button>
+              {tempApiToken && (
+                <button
+                  type="button"
+                  disabled={isClarityAPISyncing}
+                  onClick={async () => {
+                    setClarityApiToken(tempApiToken)
+                    setProjectId(tempProjectId || 'ymogx7tv3i')
+                    setIsConnected(true)
+                    setShowConnectModal(false)
+                    await persistSessionData(tempProjectId || 'ymogx7tv3i', true)
+                    await handleClarityAPISync(tempApiToken, tempProjectId || 'ymogx7tv3i')
+                  }}
+                  className="py-2 px-5 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer rounded-xl bg-purple-600 hover:bg-purple-700 text-white transition-colors w-full sm:w-auto disabled:opacity-60"
+                >
+                  <Zap className={`w-3.5 h-3.5 ${isClarityAPISyncing ? 'animate-pulse' : ''}`} />
+                  <span>{isClarityAPISyncing ? 'Syncing Clarity Data...' : 'Connect & Sync Real Clarity Data'}</span>
+                </button>
+              )}
               <button
                 type="submit"
-                className="btn-primary py-2 px-5 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                className="btn-primary py-2 px-5 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer w-full sm:w-auto"
               >
-                <Zap className="w-3.5 h-3.5" />
-                <span>Authorize & Connect</span>
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Connect (Local Events Only)</span>
               </button>
             </div>
           </form>
