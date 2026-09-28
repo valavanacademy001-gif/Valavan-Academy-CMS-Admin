@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import {
@@ -9,7 +9,7 @@ import {
   MessageCircle, Tag, CheckCircle2, Clock, X,
   FileSpreadsheet, ArrowUpRight, ChevronRight, Edit3, Trash2,
   Briefcase, Save, RefreshCw, Layers, Check, HelpCircle,
-  TrendingUp, Shield, AlertCircle, PhoneCall
+  TrendingUp, Shield, AlertCircle, PhoneCall, UserCheck, Settings2
 } from 'lucide-react'
 
 export interface LeadItem {
@@ -33,6 +33,7 @@ export interface LeadItem {
     | 'Lost'
     | string
   sales_notes?: string
+  sales_callers?: string[]
   assigned_to?: string
   utm_source?: string
   utm_medium?: string
@@ -78,6 +79,8 @@ export const CHANNEL_OPTIONS = [
   'Referral',
 ]
 
+export const DEFAULT_SALES_TEAM = ['Vithiya', 'Saranya']
+
 export const QUICK_NOTE_PRESETS = [
   'Will join next month',
   'Asked for details on WhatsApp',
@@ -104,6 +107,37 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
   const [showAddModal, setShowAddModal] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
+
+  // Sales Call Team
+  const [salesTeam, setSalesTeam] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('va_sales_team')
+        if (stored) return JSON.parse(stored)
+      } catch {}
+    }
+    return DEFAULT_SALES_TEAM
+  })
+  const [salesCallPopup, setSalesCallPopup] = useState<string | null>(null) // lead id
+  const [showManageTeamModal, setShowManageTeamModal] = useState(false)
+  const [newTeamMemberName, setNewTeamMemberName] = useState('')
+  const salesPopupRef = useRef<HTMLDivElement>(null)
+
+  // Persist sales team to localStorage
+  useEffect(() => {
+    localStorage.setItem('va_sales_team', JSON.stringify(salesTeam))
+  }, [salesTeam])
+
+  // Close popup on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (salesPopupRef.current && !salesPopupRef.current.contains(e.target as Node)) {
+        setSalesCallPopup(null)
+      }
+    }
+    if (salesCallPopup) document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [salesCallPopup])
 
   // New Manual Lead Form State
   const [newLead, setNewLead] = useState<Partial<LeadItem>>({
@@ -358,6 +392,33 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
     const updated = leads.map((l) => (l.id === notesModalLead.id ? { ...l, sales_notes: currentNotesDraft.trim() } : l))
     await persistLeads(updated, 'Sales notes saved successfully!')
     setNotesModalLead(null)
+  }
+
+  // Toggle Sales Caller on a lead
+  const toggleSalesCaller = async (leadId: string, callerName: string) => {
+    const updated = leads.map((l) => {
+      if (l.id !== leadId) return l
+      const current = l.sales_callers || []
+      const exists = current.includes(callerName)
+      return { ...l, sales_callers: exists ? current.filter((c) => c !== callerName) : [...current, callerName] }
+    })
+    await persistLeads(updated)
+  }
+
+  // Add team member
+  const addTeamMember = () => {
+    const name = newTeamMemberName.trim()
+    if (!name) return
+    if (salesTeam.includes(name)) { toast.error('Name already exists'); return }
+    setSalesTeam((prev) => [...prev, name])
+    setNewTeamMemberName('')
+    toast.success(`${name} added to sales team`)
+  }
+
+  // Remove team member
+  const removeTeamMember = (name: string) => {
+    setSalesTeam((prev) => prev.filter((m) => m !== name))
+    toast.success(`${name} removed from sales team`)
   }
 
   // Handle Delete Lead
@@ -811,6 +872,19 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
                 <th className="py-3 px-3.5">Occupation</th>
                 <th className="py-3 px-3.5">Traffic Channel</th>
                 <th className="py-3 px-3.5">Status</th>
+                <th className="py-3 px-3.5 min-w-[140px]">
+                  <div className="flex items-center gap-1.5">
+                    <span>Sales Call</span>
+                    <button
+                      type="button"
+                      onClick={() => setShowManageTeamModal(true)}
+                      title="Manage sales team"
+                      className="w-4 h-4 rounded text-gray-400 hover:text-[#1748BB] transition-colors cursor-pointer"
+                    >
+                      <Settings2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </th>
                 <th className="py-3 px-3.5 min-w-[200px]">Sales Notes</th>
                 <th className="py-3 px-3.5">Attribution</th>
                 <th className="py-3 px-3.5 text-center">Actions</th>
@@ -819,7 +893,7 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
             <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
               {filteredLeads.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="py-14 text-center text-gray-400">
+                  <td colSpan={12} className="py-14 text-center text-gray-400">
                     <Users className="w-8 h-8 mx-auto mb-2 opacity-40" />
                     <p className="text-sm font-semibold text-gray-700">No leads found</p>
                     <p className="text-xs text-gray-400 mt-0.5">
@@ -927,6 +1001,70 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
                             </option>
                           ))}
                         </select>
+                      </td>
+
+                      {/* Sales Call Column */}
+                      <td className="py-3 px-3.5 relative">
+                        <div className="relative" ref={salesCallPopup === lead.id ? salesPopupRef : undefined}>
+                          <button
+                            type="button"
+                            onClick={() => setSalesCallPopup(salesCallPopup === lead.id ? null : lead.id)}
+                            className="group flex flex-wrap gap-1 p-1.5 rounded-lg hover:bg-violet-50 border border-transparent hover:border-violet-200 cursor-pointer transition-colors min-w-[110px] w-full text-left"
+                            title="Click to assign sales caller"
+                          >
+                            {(lead.sales_callers || []).length > 0 ? (
+                              (lead.sales_callers || []).map((caller) => (
+                                <span key={caller} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-100 text-violet-700 border border-violet-200">
+                                  <UserCheck className="w-2.5 h-2.5" />
+                                  {caller}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-[10px] text-gray-400 italic">Assign caller...</span>
+                            )}
+                          </button>
+
+                          {/* Popup Dropdown */}
+                          {salesCallPopup === lead.id && (
+                            <div className="absolute top-full left-0 mt-1 z-50 bg-white rounded-xl shadow-xl border border-gray-100 min-w-[180px] p-2 space-y-1">
+                              <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider px-2 pb-1 border-b border-gray-100 flex items-center justify-between">
+                                <span>Sales Call By</span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); setShowManageTeamModal(true); setSalesCallPopup(null) }}
+                                  className="text-[#1748BB] hover:underline cursor-pointer"
+                                >
+                                  Manage
+                                </button>
+                              </div>
+                              {salesTeam.map((member) => {
+                                const selected = (lead.sales_callers || []).includes(member)
+                                return (
+                                  <button
+                                    key={member}
+                                    type="button"
+                                    onClick={() => toggleSalesCaller(lead.id, member)}
+                                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                                      selected
+                                        ? 'bg-violet-100 text-violet-700'
+                                        : 'hover:bg-gray-50 text-gray-700'
+                                    }`}
+                                  >
+                                    <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                                      selected ? 'bg-violet-600 border-violet-600' : 'border-gray-300'
+                                    }`}>
+                                      {selected && <Check className="w-2.5 h-2.5 text-white" />}
+                                    </span>
+                                    {member}
+                                  </button>
+                                )
+                              })}
+                              {salesTeam.length === 0 && (
+                                <p className="text-[11px] text-gray-400 px-2 py-1">No team members. Click Manage to add.</p>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </td>
 
                       {/* Sales Notes Column (Click to edit) */}
@@ -1099,6 +1237,29 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
+                  </div>
+
+                  {/* Sales Call (Mobile) */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[10px] font-bold text-gray-500 uppercase">Sales Call:</span>
+                    {salesTeam.map((member) => {
+                      const selected = (lead.sales_callers || []).includes(member)
+                      return (
+                        <button
+                          key={member}
+                          type="button"
+                          onClick={() => toggleSalesCaller(lead.id, member)}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors cursor-pointer ${
+                            selected
+                              ? 'bg-violet-100 text-violet-700 border-violet-200'
+                              : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-violet-50 hover:text-violet-600 hover:border-violet-200'
+                          }`}
+                        >
+                          {selected && <Check className="w-2.5 h-2.5" />}
+                          {member}
+                        </button>
+                      )
+                    })}
                   </div>
 
                   {/* Sales Notes Preview (Tap to edit) */}
@@ -1455,6 +1616,89 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 4: MANAGE SALES TEAM */}
+      {showManageTeamModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-gray-100 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <div>
+                <h3 className="text-base font-bold text-gray-900">Manage Sales Team</h3>
+                <p className="text-xs text-gray-400">Add or remove sales callers shown in the Sales Call column.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowManageTeamModal(false)}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Current Team Members */}
+            <div className="space-y-2">
+              <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Current Team</span>
+              {salesTeam.length === 0 ? (
+                <p className="text-xs text-gray-400 italic">No team members added yet.</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {salesTeam.map((member) => (
+                    <div key={member} className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-violet-50 border border-violet-100">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-full bg-violet-200 text-violet-700 flex items-center justify-center text-xs font-bold">
+                          {member.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="text-sm font-semibold text-gray-900">{member}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeTeamMember(member)}
+                        className="w-6 h-6 rounded-full bg-red-50 text-red-500 hover:bg-red-100 flex items-center justify-center transition-colors cursor-pointer"
+                        title={`Remove ${member}`}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Add New Member */}
+            <div className="space-y-2 pt-2 border-t border-gray-100">
+              <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Add New Member</span>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newTeamMemberName}
+                  onChange={(e) => setNewTeamMemberName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTeamMember() } }}
+                  placeholder="e.g. Kaviya"
+                  className="flex-1 px-3 py-2 text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1748BB]"
+                />
+                <button
+                  type="button"
+                  onClick={addTeamMember}
+                  className="btn-primary px-4 py-2 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Add
+                </button>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-1">
+              <button
+                type="button"
+                onClick={() => setShowManageTeamModal(false)}
+                className="btn-secondary py-2 px-5 text-xs font-bold cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
           </div>
         </div>
       )}
