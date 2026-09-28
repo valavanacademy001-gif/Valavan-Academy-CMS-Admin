@@ -99,8 +99,17 @@ export const QUICK_NOTE_PRESETS = [
   'Interested in Full Stack Creator instead',
 ]
 
-export default function LeadsAttributionClient({ initialLeads }: { initialLeads: LeadItem[] }) {
+export default function LeadsAttributionClient({
+  initialLeads,
+  initialSalesTeam = [],
+}: {
+  initialLeads: LeadItem[]
+  initialSalesTeam?: { name: string; color: string }[]
+}) {
   const [leads, setLeads] = useState<LeadItem[]>(initialLeads || [])
+  const [salesTeam, setSalesTeam] = useState<{ name: string; color: string }[]>(
+    initialSalesTeam && initialSalesTeam.length > 0 ? initialSalesTeam : DEFAULT_SALES_TEAM
+  )
   const [activeProgramTab, setActiveProgramTab] = useState<'All' | 'workshop' | '90days' | 'fullstack'>('All')
   const [search, setSearch] = useState('')
   const [selectedStatus, setSelectedStatus] = useState<string>('All')
@@ -116,38 +125,72 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
   const [isSaving, setIsSaving] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
 
-  // Sales Call Team
-  const [salesTeam, setSalesTeam] = useState<{ name: string; color: string }[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('va_sales_team')
-        if (stored) {
-          const parsed = JSON.parse(stored)
-          // Migrate old string[] format to {name, color}[]
-          if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'string') {
-            const migrated = (parsed as string[]).map((name, i) => ({
-              name,
-              color: DEFAULT_SALES_TEAM[i]?.color || '#8B5CF6',
-            }))
-            localStorage.setItem('va_sales_team', JSON.stringify(migrated))
-            return migrated
-          }
-          return parsed
-        }
-      } catch {}
-    }
-    return DEFAULT_SALES_TEAM
-  })
+  // Sales Call Team Popup state
   const [salesCallPopup, setSalesCallPopup] = useState<string | null>(null) // lead id
   const [showManageTeamModal, setShowManageTeamModal] = useState(false)
   const [newTeamMemberName, setNewTeamMemberName] = useState('')
   const [newTeamMemberColor, setNewTeamMemberColor] = useState('#8B5CF6')
   const salesPopupRef = useRef<HTMLDivElement>(null)
 
-  // Persist sales team to localStorage
+  // Keep state in sync if initialLeads or initialSalesTeam changes
   useEffect(() => {
-    localStorage.setItem('va_sales_team', JSON.stringify(salesTeam))
-  }, [salesTeam])
+    if (initialLeads && initialLeads.length > 0) {
+      setLeads(initialLeads)
+    }
+  }, [initialLeads])
+
+  useEffect(() => {
+    if (initialSalesTeam && initialSalesTeam.length > 0) {
+      setSalesTeam(initialSalesTeam)
+    }
+  }, [initialSalesTeam])
+
+  // Persist sales team to Supabase
+  const persistSalesTeam = async (team: { name: string; color: string }[]) => {
+    const supabase = createClient()
+    try {
+      const { data: page } = await supabase.from('pages').select('id').eq('slug', 'global_settings').maybeSingle()
+      if (!page) return
+      const { data: sec } = await supabase.from('sections').select('id').eq('page_id', page.id).eq('slug', 'tracking_analytics').maybeSingle()
+      if (!sec) return
+
+      let { data: field } = await supabase.from('fields').select('id').eq('section_id', sec.id).eq('name', 'sales_team_data').maybeSingle()
+      if (!field) {
+        const { data: newF } = await supabase.from('fields').insert({
+          section_id: sec.id,
+          name: 'sales_team_data',
+          label: 'Sales Team Data',
+          field_type: 'json',
+          sort_order: 22,
+        }).select('id').single()
+        field = newF
+      }
+
+      if (field) {
+        const jsonStr = JSON.stringify(team)
+        const { data: existingVal } = await supabase.from('field_values').select('id').eq('field_id', field.id).maybeSingle()
+        if (existingVal) {
+          await supabase.from('field_values').update({
+            value_text: jsonStr,
+            published_value_text: jsonStr,
+            is_draft: false,
+            updated_at: new Date().toISOString(),
+          }).eq('id', existingVal.id)
+        } else {
+          await supabase.from('field_values').insert({
+            page_id: page.id,
+            section_id: sec.id,
+            field_id: field.id,
+            value_text: jsonStr,
+            published_value_text: jsonStr,
+            is_draft: false,
+          })
+        }
+      }
+    } catch (e) {
+      console.error('Error saving sales team to DB:', e)
+    }
+  }
 
   // Close popup on outside click
   useEffect(() => {
@@ -183,10 +226,10 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
     setIsSaving(true)
     const supabase = createClient()
     try {
-      const { data: page } = await supabase.from('pages').select('id').eq('slug', 'global_settings').single()
+      const { data: page } = await supabase.from('pages').select('id').eq('slug', 'global_settings').maybeSingle()
       if (!page) throw new Error('Global settings page not found')
 
-      const { data: sec } = await supabase.from('sections').select('id').eq('page_id', page.id).eq('slug', 'tracking_analytics').single()
+      const { data: sec } = await supabase.from('sections').select('id').eq('page_id', page.id).eq('slug', 'tracking_analytics').maybeSingle()
       if (!sec) throw new Error('Tracking analytics section not found')
 
       let { data: field } = await supabase.from('fields').select('id').eq('section_id', sec.id).eq('name', 'leads_data').maybeSingle()
@@ -206,14 +249,15 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
         const { data: existingVal } = await supabase.from('field_values').select('id').eq('field_id', field.id).maybeSingle()
 
         if (existingVal) {
-          await supabase.from('field_values').update({
+          const { error: updErr } = await supabase.from('field_values').update({
             value_text: jsonStr,
             published_value_text: jsonStr,
             is_draft: false,
             updated_at: new Date().toISOString(),
           }).eq('id', existingVal.id)
+          if (updErr) throw updErr
         } else {
-          await supabase.from('field_values').insert({
+          const { error: insErr } = await supabase.from('field_values').insert({
             page_id: page.id,
             section_id: sec.id,
             field_id: field.id,
@@ -221,6 +265,7 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
             published_value_text: jsonStr,
             is_draft: false,
           })
+          if (insErr) throw insErr
         }
       }
 
@@ -229,12 +274,13 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
     } catch (e: any) {
       console.error('Error saving leads:', e)
       toast.error(`Database sync error: ${e.message}`)
+      throw e
     } finally {
       setIsSaving(false)
     }
   }
 
-  // Refresh latest leads from Supabase
+  // Refresh latest leads & sales team from Supabase
   const refreshLeads = useCallback(async (showToast = true) => {
     setIsRefreshing(true)
     const supabase = createClient()
@@ -249,14 +295,43 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
             .eq('section_id', sec.id)
 
           const fv = fieldVals?.find((f: any) => f.field?.name === 'leads_data')
-
           if (fv) {
             const raw = fv.published_value_text || fv.value_text
             if (raw) {
-              setLeads(JSON.parse(raw))
-              if (showToast) toast.success('✓ Leads refreshed with latest entries!')
+              try {
+                const parsed = JSON.parse(raw)
+                if (Array.isArray(parsed)) {
+                  setLeads(parsed)
+                }
+              } catch (e) {
+                console.error('Error parsing leads json', e)
+              }
             }
           }
+
+          const teamFv = fieldVals?.find((f: any) => f.field?.name === 'sales_team_data')
+          if (teamFv) {
+            const raw = teamFv.published_value_text || teamFv.value_text
+            if (raw) {
+              try {
+                const parsed = JSON.parse(raw)
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                  if (typeof parsed[0] === 'string') {
+                    setSalesTeam(parsed.map((name: string, i: number) => ({
+                      name,
+                      color: DEFAULT_SALES_TEAM[i]?.color || '#8B5CF6',
+                    })))
+                  } else {
+                    setSalesTeam(parsed)
+                  }
+                }
+              } catch (e) {
+                console.error('Error parsing sales team json', e)
+              }
+            }
+          }
+
+          if (showToast) toast.success('✓ Leads refreshed with latest entries!')
         }
       }
     } catch (err) {
@@ -265,6 +340,30 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
       setIsRefreshing(false)
     }
   }, [])
+
+  // Auto-fetch fresh leads from Supabase on mount (ensures cross-device data is loaded)
+  useEffect(() => {
+    refreshLeads(false)
+  }, [refreshLeads])
+
+  // Realtime subscription on field_values so other devices get updates live
+  useEffect(() => {
+    const supabase = createClient()
+    const channel = supabase
+      .channel('leads-realtime-sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'field_values' },
+        () => {
+          refreshLeads(false)
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [refreshLeads])
 
   // Status badge styling helper
   const getStatusBadgeStyle = (status: string) => {
@@ -415,8 +514,8 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
     setNotesModalLead(null)
   }
 
-  // Toggle Sales Caller on a lead (optimistic update - don't await to keep popup open)
-  const toggleSalesCaller = (leadId: string, callerName: string) => {
+  // Toggle Sales Caller on a lead
+  const toggleSalesCaller = async (leadId: string, callerName: string) => {
     const updated = leads.map((l) => {
       if (l.id !== leadId) return l
       const current = l.sales_callers || []
@@ -424,30 +523,42 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
       return { ...l, sales_callers: exists ? current.filter((c) => c !== callerName) : [...current, callerName] }
     })
     setLeads(updated)
-    // Persist in background without blocking UI
-    persistLeads(updated).catch(console.error)
+    try {
+      await persistLeads(updated)
+    } catch (err) {
+      console.error('Failed saving caller update:', err)
+    }
   }
 
   // Add team member
-  const addTeamMember = () => {
+  const addTeamMember = async () => {
     const name = newTeamMemberName.trim()
     if (!name) return
-    if (salesTeam.some((m) => m.name === name)) { toast.error('Name already exists'); return }
-    setSalesTeam((prev) => [...prev, { name, color: newTeamMemberColor }])
+    if (salesTeam.some((m) => m.name.toLowerCase() === name.toLowerCase())) {
+      toast.error('Name already exists')
+      return
+    }
+    const updated = [...salesTeam, { name, color: newTeamMemberColor }]
+    setSalesTeam(updated)
     setNewTeamMemberColor('#8B5CF6')
     setNewTeamMemberName('')
+    await persistSalesTeam(updated)
     toast.success(`${name} added to sales team`)
   }
 
   // Remove team member
-  const removeTeamMember = (name: string) => {
-    setSalesTeam((prev) => prev.filter((m) => m.name !== name))
+  const removeTeamMember = async (name: string) => {
+    const updated = salesTeam.filter((m) => m.name !== name)
+    setSalesTeam(updated)
+    await persistSalesTeam(updated)
     toast.success(`${name} removed from sales team`)
   }
 
   // Update team member color
-  const updateTeamMemberColor = (name: string, color: string) => {
-    setSalesTeam((prev) => prev.map((m) => m.name === name ? { ...m, color } : m))
+  const updateTeamMemberColor = async (name: string, color: string) => {
+    const updated = salesTeam.map((m) => m.name === name ? { ...m, color } : m)
+    setSalesTeam(updated)
+    await persistSalesTeam(updated)
   }
 
   // Handle Delete Lead

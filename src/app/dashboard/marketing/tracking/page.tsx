@@ -6,6 +6,9 @@ export const metadata = {
   description: 'Real-time telemetry, visitor analytics, Meta Pixel, and conversion tracking dashboard',
 }
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function TrackingPage() {
   const supabase = await createClient()
 
