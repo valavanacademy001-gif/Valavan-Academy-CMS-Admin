@@ -121,7 +121,19 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
     if (typeof window !== 'undefined') {
       try {
         const stored = localStorage.getItem('va_sales_team')
-        if (stored) return JSON.parse(stored)
+        if (stored) {
+          const parsed = JSON.parse(stored)
+          // Migrate old string[] format to {name, color}[]
+          if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'string') {
+            const migrated = (parsed as string[]).map((name, i) => ({
+              name,
+              color: DEFAULT_SALES_TEAM[i]?.color || '#8B5CF6',
+            }))
+            localStorage.setItem('va_sales_team', JSON.stringify(migrated))
+            return migrated
+          }
+          return parsed
+        }
       } catch {}
     }
     return DEFAULT_SALES_TEAM
@@ -403,15 +415,17 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
     setNotesModalLead(null)
   }
 
-  // Toggle Sales Caller on a lead
-  const toggleSalesCaller = async (leadId: string, callerName: string) => {
+  // Toggle Sales Caller on a lead (optimistic update - don't await to keep popup open)
+  const toggleSalesCaller = (leadId: string, callerName: string) => {
     const updated = leads.map((l) => {
       if (l.id !== leadId) return l
       const current = l.sales_callers || []
       const exists = current.includes(callerName)
       return { ...l, sales_callers: exists ? current.filter((c) => c !== callerName) : [...current, callerName] }
     })
-    await persistLeads(updated)
+    setLeads(updated)
+    // Persist in background without blocking UI
+    persistLeads(updated).catch(console.error)
   }
 
   // Add team member
@@ -1647,7 +1661,7 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
       {/* MODAL 4: MANAGE SALES TEAM */}
       {showManageTeamModal && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-gray-100 space-y-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-gray-100 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <div>
                 <h3 className="text-base font-bold text-gray-900">Manage Sales Team</h3>
@@ -1670,41 +1684,44 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
               ) : (
                 <div className="space-y-1.5">
                   {salesTeam.map((member) => (
-                    <div key={member.name} className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl border" style={{ backgroundColor: member.color + '10', borderColor: member.color + '30' }}>
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <div
-                          className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
-                          style={{ backgroundColor: member.color }}
-                        >
-                          {member.name.charAt(0).toUpperCase()}
-                        </div>
-                        <span className="text-sm font-semibold text-gray-900">{member.name}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        {/* Color swatches */}
-                        <div className="flex items-center gap-1">
-                          {PRESET_COLORS.map((clr) => (
-                            <button
-                              key={clr}
-                              type="button"
-                              onClick={() => updateTeamMemberColor(member.name, clr)}
-                              className="w-4 h-4 rounded-full border-2 transition-transform hover:scale-110 cursor-pointer"
-                              style={{
-                                backgroundColor: clr,
-                                borderColor: member.color === clr ? '#1F2937' : 'transparent',
-                              }}
-                              title={clr}
-                            />
-                          ))}
+                    <div key={member.name} className="rounded-xl border p-3 space-y-2" style={{ backgroundColor: member.color + '08', borderColor: member.color + '30' }}>
+                      {/* Name + Remove Row */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+                            style={{ backgroundColor: member.color }}
+                          >
+                            {member.name.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="text-sm font-semibold text-gray-900">{member.name}</span>
                         </div>
                         <button
                           type="button"
                           onClick={() => removeTeamMember(member.name)}
-                          className="w-6 h-6 rounded-full bg-red-50 text-red-500 hover:bg-red-100 flex items-center justify-center transition-colors cursor-pointer ml-1"
+                          className="w-6 h-6 rounded-full bg-red-50 text-red-500 hover:bg-red-100 flex items-center justify-center transition-colors cursor-pointer shrink-0"
                           title={`Remove ${member.name}`}
                         >
                           <X className="w-3 h-3" />
                         </button>
+                      </div>
+                      {/* Color Swatches Row */}
+                      <div className="flex items-center gap-1.5 flex-wrap pl-9">
+                        <span className="text-[10px] text-gray-400 font-semibold mr-0.5">Color:</span>
+                        {PRESET_COLORS.map((clr) => (
+                          <button
+                            key={clr}
+                            type="button"
+                            onClick={() => updateTeamMemberColor(member.name, clr)}
+                            className="w-5 h-5 rounded-full transition-transform hover:scale-110 cursor-pointer"
+                            style={{
+                              backgroundColor: clr,
+                              outline: member.color === clr ? `3px solid ${clr}` : 'none',
+                              outlineOffset: '2px',
+                            }}
+                            title={clr}
+                          />
+                        ))}
                       </div>
                     </div>
                   ))}
