@@ -79,7 +79,15 @@ export const CHANNEL_OPTIONS = [
   'Referral',
 ]
 
-export const DEFAULT_SALES_TEAM = ['Vithiya', 'Saranya']
+export const DEFAULT_SALES_TEAM = [
+  { name: 'Vithiya', color: '#8B5CF6' },
+  { name: 'Saranya', color: '#EC4899' },
+]
+
+export const PRESET_COLORS = [
+  '#8B5CF6', '#EC4899', '#3B82F6', '#10B981', '#F59E0B',
+  '#EF4444', '#06B6D4', '#F97316', '#6366F1', '#14B8A6',
+]
 
 export const QUICK_NOTE_PRESETS = [
   'Will join next month',
@@ -109,7 +117,7 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
   const [isRefreshing, setIsRefreshing] = useState(false)
 
   // Sales Call Team
-  const [salesTeam, setSalesTeam] = useState<string[]>(() => {
+  const [salesTeam, setSalesTeam] = useState<{ name: string; color: string }[]>(() => {
     if (typeof window !== 'undefined') {
       try {
         const stored = localStorage.getItem('va_sales_team')
@@ -121,6 +129,7 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
   const [salesCallPopup, setSalesCallPopup] = useState<string | null>(null) // lead id
   const [showManageTeamModal, setShowManageTeamModal] = useState(false)
   const [newTeamMemberName, setNewTeamMemberName] = useState('')
+  const [newTeamMemberColor, setNewTeamMemberColor] = useState('#8B5CF6')
   const salesPopupRef = useRef<HTMLDivElement>(null)
 
   // Persist sales team to localStorage
@@ -409,16 +418,22 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
   const addTeamMember = () => {
     const name = newTeamMemberName.trim()
     if (!name) return
-    if (salesTeam.includes(name)) { toast.error('Name already exists'); return }
-    setSalesTeam((prev) => [...prev, name])
+    if (salesTeam.some((m) => m.name === name)) { toast.error('Name already exists'); return }
+    setSalesTeam((prev) => [...prev, { name, color: newTeamMemberColor }])
+    setNewTeamMemberColor('#8B5CF6')
     setNewTeamMemberName('')
     toast.success(`${name} added to sales team`)
   }
 
   // Remove team member
   const removeTeamMember = (name: string) => {
-    setSalesTeam((prev) => prev.filter((m) => m !== name))
+    setSalesTeam((prev) => prev.filter((m) => m.name !== name))
     toast.success(`${name} removed from sales team`)
+  }
+
+  // Update team member color
+  const updateTeamMemberColor = (name: string, color: string) => {
+    setSalesTeam((prev) => prev.map((m) => m.name === name ? { ...m, color } : m))
   }
 
   // Handle Delete Lead
@@ -1013,12 +1028,20 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
                             title="Click to assign sales caller"
                           >
                             {(lead.sales_callers || []).length > 0 ? (
-                              (lead.sales_callers || []).map((caller) => (
-                                <span key={caller} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-100 text-violet-700 border border-violet-200">
-                                  <UserCheck className="w-2.5 h-2.5" />
-                                  {caller}
-                                </span>
-                              ))
+                              (lead.sales_callers || []).map((caller) => {
+                                const teamMember = salesTeam.find((m) => m.name === caller)
+                                const clr = teamMember?.color || '#8B5CF6'
+                                return (
+                                  <span
+                                    key={caller}
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border"
+                                    style={{ backgroundColor: clr + '18', color: clr, borderColor: clr + '40' }}
+                                  >
+                                    <UserCheck className="w-2.5 h-2.5" />
+                                    {caller}
+                                  </span>
+                                )
+                              })
                             ) : (
                               <span className="text-[10px] text-gray-400 italic">Assign caller...</span>
                             )}
@@ -1038,24 +1061,26 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
                                 </button>
                               </div>
                               {salesTeam.map((member) => {
-                                const selected = (lead.sales_callers || []).includes(member)
+                                const selected = (lead.sales_callers || []).includes(member.name)
                                 return (
                                   <button
-                                    key={member}
+                                    key={member.name}
                                     type="button"
-                                    onClick={() => toggleSalesCaller(lead.id, member)}
+                                    onClick={() => toggleSalesCaller(lead.id, member.name)}
                                     className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                                      selected
-                                        ? 'bg-violet-100 text-violet-700'
-                                        : 'hover:bg-gray-50 text-gray-700'
+                                      selected ? 'bg-gray-50' : 'hover:bg-gray-50 text-gray-700'
                                     }`}
+                                    style={selected ? { color: member.color } : {}}
                                   >
-                                    <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                                      selected ? 'bg-violet-600 border-violet-600' : 'border-gray-300'
-                                    }`}>
+                                    <span
+                                      className="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0"
+                                      style={selected
+                                        ? { backgroundColor: member.color, borderColor: member.color }
+                                        : { borderColor: '#D1D5DB' }}
+                                    >
                                       {selected && <Check className="w-2.5 h-2.5 text-white" />}
                                     </span>
-                                    {member}
+                                    {member.name}
                                   </button>
                                 )
                               })}
@@ -1243,20 +1268,19 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="text-[10px] font-bold text-gray-500 uppercase">Sales Call:</span>
                     {salesTeam.map((member) => {
-                      const selected = (lead.sales_callers || []).includes(member)
+                      const selected = (lead.sales_callers || []).includes(member.name)
                       return (
                         <button
-                          key={member}
+                          key={member.name}
                           type="button"
-                          onClick={() => toggleSalesCaller(lead.id, member)}
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors cursor-pointer ${
-                            selected
-                              ? 'bg-violet-100 text-violet-700 border-violet-200'
-                              : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-violet-50 hover:text-violet-600 hover:border-violet-200'
-                          }`}
+                          onClick={() => toggleSalesCaller(lead.id, member.name)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors cursor-pointer"
+                          style={selected
+                            ? { backgroundColor: member.color + '18', color: member.color, borderColor: member.color + '40' }
+                            : { backgroundColor: '#F3F4F6', color: '#6B7280', borderColor: '#E5E7EB' }}
                         >
                           {selected && <Check className="w-2.5 h-2.5" />}
-                          {member}
+                          {member.name}
                         </button>
                       )
                     })}
@@ -1646,21 +1670,42 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
               ) : (
                 <div className="space-y-1.5">
                   {salesTeam.map((member) => (
-                    <div key={member} className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-violet-50 border border-violet-100">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-violet-200 text-violet-700 flex items-center justify-center text-xs font-bold">
-                          {member.charAt(0).toUpperCase()}
+                    <div key={member.name} className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl border" style={{ backgroundColor: member.color + '10', borderColor: member.color + '30' }}>
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <div
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+                          style={{ backgroundColor: member.color }}
+                        >
+                          {member.name.charAt(0).toUpperCase()}
                         </div>
-                        <span className="text-sm font-semibold text-gray-900">{member}</span>
+                        <span className="text-sm font-semibold text-gray-900">{member.name}</span>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => removeTeamMember(member)}
-                        className="w-6 h-6 rounded-full bg-red-50 text-red-500 hover:bg-red-100 flex items-center justify-center transition-colors cursor-pointer"
-                        title={`Remove ${member}`}
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        {/* Color swatches */}
+                        <div className="flex items-center gap-1">
+                          {PRESET_COLORS.map((clr) => (
+                            <button
+                              key={clr}
+                              type="button"
+                              onClick={() => updateTeamMemberColor(member.name, clr)}
+                              className="w-4 h-4 rounded-full border-2 transition-transform hover:scale-110 cursor-pointer"
+                              style={{
+                                backgroundColor: clr,
+                                borderColor: member.color === clr ? '#1F2937' : 'transparent',
+                              }}
+                              title={clr}
+                            />
+                          ))}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeTeamMember(member.name)}
+                          className="w-6 h-6 rounded-full bg-red-50 text-red-500 hover:bg-red-100 flex items-center justify-center transition-colors cursor-pointer ml-1"
+                          title={`Remove ${member.name}`}
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1687,6 +1732,21 @@ export default function LeadsAttributionClient({ initialLeads }: { initialLeads:
                   <Plus className="w-3.5 h-3.5" />
                   Add
                 </button>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap pt-1">
+                <span className="text-[10px] text-gray-400 font-semibold">Pick color:</span>
+                {PRESET_COLORS.map((clr) => (
+                  <button
+                    key={clr}
+                    type="button"
+                    onClick={() => setNewTeamMemberColor(clr)}
+                    className="w-5 h-5 rounded-full border-2 transition-transform hover:scale-110 cursor-pointer"
+                    style={{
+                      backgroundColor: clr,
+                      borderColor: newTeamMemberColor === clr ? '#1F2937' : 'transparent',
+                    }}
+                  />
+                ))}
               </div>
             </div>
 
