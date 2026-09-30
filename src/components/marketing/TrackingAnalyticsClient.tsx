@@ -327,41 +327,92 @@ export default function TrackingAnalyticsClient({
       }
     })
 
-    // 3. Top Traffic Source
-    const sourceCount: Record<string, number> = {}
+    // 3. Top Traffic Source & Channel Attribution
+    const channelCounts = {
+      Google: 0,
+      Direct: 0,
+      Referral: 0,
+      YouTube: 0,
+      Instagram: 0,
+      WhatsApp: 0,
+    }
+
     fEvents.forEach((ev) => {
-      let src = (ev.utm_source || '').toLowerCase().trim()
-      if (!src || src === 'direct' || src === 'none') {
-        const ref = (ev.referrer || '').toLowerCase()
-        if (ref.includes('instagram')) src = 'Instagram'
-        else if (ref.includes('facebook') || ref.includes('fb')) src = 'Facebook'
-        else if (ref.includes('google')) src = 'Google'
-        else if (ref.includes('youtube')) src = 'YouTube'
-        else if (ref.includes('whatsapp')) src = 'WhatsApp'
-        else src = 'Direct'
+      const s = (ev.utm_source || '').toLowerCase().trim()
+      const r = (ev.referrer || '').toLowerCase().trim()
+      const m = (ev.utm_medium || '').toLowerCase().trim()
+
+      if (
+        s.includes('instagram') ||
+        s.includes('meta') ||
+        s.includes('facebook') ||
+        s.includes('fb') ||
+        s === 'ig' ||
+        r.includes('instagram') ||
+        r.includes('facebook') ||
+        r.includes('fb.me')
+      ) {
+        channelCounts.Instagram++
+      } else if (
+        s.includes('google') ||
+        m.includes('cpc') ||
+        m.includes('organic') ||
+        r.includes('google')
+      ) {
+        channelCounts.Google++
+      } else if (
+        s.includes('youtube') ||
+        s.includes('yt') ||
+        r.includes('youtube') ||
+        r.includes('youtu.be')
+      ) {
+        channelCounts.YouTube++
+      } else if (
+        s.includes('whatsapp') ||
+        s.includes('wa') ||
+        r.includes('whatsapp') ||
+        r.includes('wa.me')
+      ) {
+        channelCounts.WhatsApp++
+      } else if (
+        s.includes('referral') ||
+        s.includes('chatgpt') ||
+        r.includes('chatgpt') ||
+        (r && !r.includes('valavanacademy') && !r.includes('localhost') && r !== 'direct')
+      ) {
+        channelCounts.Referral++
       } else {
-        src = src.charAt(0).toUpperCase() + src.slice(1)
+        channelCounts.Direct++
       }
-      sourceCount[src] = (sourceCount[src] || 0) + 1
     })
 
-    let topSource = 'Direct'
-    let topSourceMax = 0
-    Object.entries(sourceCount).forEach(([s, count]) => {
+    let topSource = 'Google Search & Ads'
+    let topSourceMax = -1
+    const channelDisplayNames: Record<keyof typeof channelCounts, string> = {
+      Google: 'Google Search & Ads',
+      Direct: 'Direct Traffic',
+      Referral: 'Referral & Other',
+      YouTube: 'YouTube Channel',
+      Instagram: 'Instagram / Meta',
+      WhatsApp: 'WhatsApp Direct',
+    }
+
+    Object.entries(channelCounts).forEach(([k, count]) => {
       if (count > topSourceMax) {
         topSourceMax = count
-        topSource = s
+        topSource = channelDisplayNames[k as keyof typeof channelCounts] || k
       }
     })
 
     // 4. Traffic Sources List Breakdown
     const totalSourcesEvents = fEvents.length || 1
     const trafficSourcesList = [
-      { name: 'Direct Traffic', key: 'Direct', color: 'bg-blue-600', count: sourceCount['Direct'] || 0 },
-      { name: 'Instagram / Meta', key: 'Instagram', color: 'bg-pink-600', count: (sourceCount['Instagram'] || 0) + (sourceCount['Facebook'] || 0) },
-      { name: 'Google Search & Ads', key: 'Google', color: 'bg-amber-500', count: sourceCount['Google'] || 0 },
-      { name: 'YouTube Channel', key: 'YouTube', color: 'bg-red-600', count: sourceCount['YouTube'] || 0 },
-      { name: 'WhatsApp Direct', key: 'WhatsApp', color: 'bg-emerald-600', count: sourceCount['WhatsApp'] || 0 },
+      { name: 'Google Search & Ads', key: 'Google', color: 'bg-amber-500', count: channelCounts.Google },
+      { name: 'Direct Traffic', key: 'Direct', color: 'bg-blue-600', count: channelCounts.Direct },
+      { name: 'Referral & Other', key: 'Referral', color: 'bg-purple-600', count: channelCounts.Referral },
+      { name: 'YouTube Channel', key: 'YouTube', color: 'bg-red-600', count: channelCounts.YouTube },
+      { name: 'Instagram / Meta', key: 'Instagram', color: 'bg-pink-600', count: channelCounts.Instagram },
+      { name: 'WhatsApp Direct', key: 'WhatsApp', color: 'bg-emerald-600', count: channelCounts.WhatsApp },
     ].map((item) => ({
       ...item,
       percentage: Math.round((item.count / totalSourcesEvents) * 100),
