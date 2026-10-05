@@ -58,6 +58,8 @@ export const TOOL_PRESETS = [
   { name: 'ChatGPT', image: '/assets/tools/chatgpt.png', category: 'AI Tools' },
   { name: 'Gemini AI', image: '/assets/tools/gemini-ai.png', category: 'AI Tools' },
   { name: 'HeyGen', image: '/assets/tools/heygen.png', category: 'AI Tools' },
+  { name: 'Full Stack Tools', image: '/assets/tools/full-stack-tools.png', category: 'Bundles' },
+  { name: 'AI Tools', image: '/assets/tools/ai-tools.png', category: 'Bundles' },
 ]
 
 export default function EditProgramClient({ program: initialProgram }: { program: ProgramData }) {

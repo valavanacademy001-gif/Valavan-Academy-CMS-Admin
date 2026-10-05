@@ -23,6 +23,7 @@ import {
 import MediaPickerModal from '@/components/media/MediaPickerModal'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { uploadMediaFile } from '@/lib/mediaUpload'
 
 type FieldData = {
   id: string
@@ -72,36 +73,14 @@ export default function FieldEditor({
     const { data: { user } } = await supabase.auth.getUser()
 
     try {
-      const ext = file.name.split('.').pop()
-      const filename = `${Date.now()}-${Math.random().toString(36).substring(2)}.${ext}`
-      const path = `uploads/${filename}`
-
-      const { error: uploadError } = await supabase.storage
-        .from('cms-media')
-        .upload(path, file, { upsert: false })
-
-      if (uploadError) {
-        toast.error(`Failed to upload: ${uploadError.message}`)
+      const res = await uploadMediaFile(supabase, file, user?.id)
+      if (res.error) {
+        toast.error(res.error)
         setUploading(false)
         return
       }
 
-      const { data: { publicUrl } } = supabase.storage.from('cms-media').getPublicUrl(path)
-
-      // Save to media library table too
-      await supabase.from('media').insert({
-        filename,
-        original_name: file.name,
-        file_url: publicUrl,
-        file_type: 'image',
-        file_size: file.size,
-        alt_text: file.name.replace(/[-_]/g, ' ').replace(/\.[^/.]+$/, ''),
-        storage_path: path,
-        bucket_name: 'cms-media',
-        uploaded_by: user?.id,
-      })
-
-      onChange(publicUrl)
+      onChange(res.file_url)
       toast.success('✓ Image uploaded and updated!')
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error'

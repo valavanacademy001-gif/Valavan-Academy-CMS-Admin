@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { Search, Image, Video, File, X, Upload, Check, Loader2 } from 'lucide-react'
 import { formatFileSize } from '@/lib/utils'
+import { uploadMediaFile } from '@/lib/mediaUpload'
 
 export type MediaItem = {
   id: string
@@ -68,36 +69,14 @@ export default function MediaPickerModal({
     const { data: { user } } = await supabase.auth.getUser()
 
     for (const file of Array.from(files)) {
-      const ext = file.name.split('.').pop()
-      const filename = `${Date.now()}-${Math.random().toString(36).substring(2)}.${ext}`
-      const path = `uploads/${filename}`
-
-      const { error: uploadError } = await supabase.storage
-        .from('cms-media')
-        .upload(path, file, { upsert: false })
-
-      if (uploadError) {
-        toast.error(`Failed to upload ${file.name}: ${uploadError.message}`)
+      const res = await uploadMediaFile(supabase, file, user?.id)
+      if (res.error) {
+        toast.error(res.error)
         continue
       }
 
-      const { data: { publicUrl } } = supabase.storage.from('cms-media').getPublicUrl(path)
-      const fileType = file.type.startsWith('image') ? 'image' : file.type.startsWith('video') ? 'video' : 'document'
-
-      const { data: mediaRecord } = await supabase.from('media').insert({
-        filename,
-        original_name: file.name,
-        file_url: publicUrl,
-        file_type: fileType,
-        file_size: file.size,
-        alt_text: file.name.replace(/[-_]/g, ' ').replace(/\.[^/.]+$/, ''),
-        storage_path: path,
-        bucket_name: 'cms-media',
-        uploaded_by: user?.id,
-      }).select().single()
-
-      if (mediaRecord) {
-        setMediaList((prev) => [mediaRecord, ...prev])
+      if (res.mediaRecord) {
+        setMediaList((prev) => [res.mediaRecord, ...prev])
         toast.success(`✓ ${file.name} uploaded`)
       }
     }
