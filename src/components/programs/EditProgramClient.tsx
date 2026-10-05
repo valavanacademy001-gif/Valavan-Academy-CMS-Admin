@@ -150,21 +150,36 @@ export default function EditProgramClient({ program: initialProgram }: { program
       toast.success('✓ Tool logo updated from Media Library')
       setToolMediaTargetIndex(null)
     } else {
-      // Logo selected for custom tool input
-      setCustomToolImage(url)
-      if (!customToolInput.trim()) {
-        const filename = url.split('/').pop()?.split('?')[0] || ''
-        const cleanName = filename
-          .replace(/^\d+[-_]/, '')
-          .replace(/\.[^/.]+$/, '')
-          .replace(/[-_]/g, ' ')
-          .replace(/\b\w/g, (c) => c.toUpperCase())
-          .trim()
-        if (cleanName) {
-          setCustomToolInput(cleanName)
-        }
+      // Direct Add from Media Library!
+      const filename = url.split('/').pop()?.split('?')[0] || ''
+      const cleanName = (customToolInput.trim()) || filename
+        .replace(/^\d+[-_]/, '')
+        .replace(/\.[^/.]+$/, '')
+        .replace(/[-_]/g, ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase())
+        .trim() || 'Custom Tool'
+
+      // Check if tool already exists
+      const existsIdx = form.software_tools.findIndex(
+        (t) => t.name.toLowerCase() === cleanName.toLowerCase()
+      )
+
+      if (existsIdx >= 0) {
+        setForm((p) => {
+          const updated = [...p.software_tools]
+          updated[existsIdx] = { ...updated[existsIdx], image: url }
+          return { ...p, software_tools: updated }
+        })
+        toast.success(`✓ Updated logo for "${cleanName}"`)
+      } else {
+        setForm((p) => ({
+          ...p,
+          software_tools: [...p.software_tools, { name: cleanName, image: url }],
+        }))
+        toast.success(`✓ Added "${cleanName}" with logo from Media Library!`)
       }
-      toast.success('✓ Tool logo selected from Media Library')
+      setCustomToolInput('')
+      setCustomToolImage('')
     }
     setShowToolMediaPicker(false)
   }
@@ -461,6 +476,16 @@ export default function EditProgramClient({ program: initialProgram }: { program
               >
                 <FolderOpen className="w-3.5 h-3.5" />
                 <span>+ Add from Media</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSave()}
+                disabled={loading}
+                className="btn-primary py-1.5 px-3 text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                title="Save tools changes to database"
+              >
+                {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                <span>Save Tools</span>
               </button>
               <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
                 {form.software_tools.length} Tools Selected
