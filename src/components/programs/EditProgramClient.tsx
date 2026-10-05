@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { ArrowLeft, Loader2, Save, Trash2, Globe, Archive, FolderOpen, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Loader2, Save, Trash2, Globe, Archive, FolderOpen, RefreshCw, Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
 import DeleteConfirmModal from '@/components/editor/DeleteConfirmModal'
 import MediaPickerModal from '@/components/media/MediaPickerModal'
@@ -190,6 +190,11 @@ export default function EditProgramClient({ program: initialProgram }: { program
               }`}>
                 {form.status}
               </span>
+              <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold border ${
+                form.is_visible ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'
+              }`}>
+                {form.is_visible ? '● Visible on Website' : '○ Hidden from Website'}
+              </span>
             </div>
             <code className="text-xs text-gray-400">/{form.slug}</code>
           </div>
@@ -217,6 +222,37 @@ export default function EditProgramClient({ program: initialProgram }: { program
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">
+        {/* Visibility Setting Card */}
+        <div className="card p-5 bg-white border border-gray-200 flex items-center justify-between shadow-2xs">
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2">
+              {form.is_visible ? <Eye className="w-4 h-4 text-emerald-600" /> : <EyeOff className="w-4 h-4 text-amber-500" />}
+              <span className="text-sm font-semibold text-gray-900">Website & Programs Page Visibility</span>
+              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                form.is_visible ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+              }`}>
+                {form.is_visible ? 'Visible' : 'Hidden'}
+              </span>
+            </div>
+            <p className="text-xs text-gray-500">
+              When toggled off, this program and its live workshop card/banner on the Programs page will be hidden from visitors.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setForm((p) => ({ ...p, is_visible: !p.is_visible }))}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+              form.is_visible ? 'bg-[#1748BB]' : 'bg-gray-300'
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                form.is_visible ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
+
         <div className="card p-6 space-y-4">
           <h2 className="text-sm font-semibold text-gray-800 pb-3 border-b border-gray-100">Program Details</h2>
           <div>
