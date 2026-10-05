@@ -315,10 +315,10 @@ export default function FieldEditor({
         <div className="flex flex-wrap sm:flex-nowrap gap-2 items-center">
           <input
             type="text"
-            value={value}
+            value={value.startsWith('data:') ? '[Uploaded Image File]' : value}
             onChange={(e) => onChange(e.target.value)}
             placeholder="e.g. /assets/tools/indesign.png or https://..."
-            className="input font-mono text-xs sm:text-sm flex-1"
+            className="input font-mono text-xs sm:text-sm flex-1 text-gray-700"
           />
           <div className="flex items-center gap-1.5 shrink-0">
             <button
@@ -399,8 +399,12 @@ export default function FieldEditor({
                 </div>
               </div>
 
-              <div className="text-gray-500 font-mono text-xs break-all bg-white px-2.5 py-1.5 rounded-md border border-neutral-200">
-                {value}
+              {/* Clean file info - DO NOT output raw base64 text */}
+              <div className="text-gray-600 font-sans text-xs bg-white px-2.5 py-1.5 rounded-md border border-neutral-200 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                <span className="truncate">
+                  {value.startsWith('data:') ? '✓ Uploaded Image File (Ready)' : value}
+                </span>
               </div>
 
               {/* Action Buttons: Upload New / Library / Cancel & Remove */}
