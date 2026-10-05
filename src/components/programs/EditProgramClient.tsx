@@ -9,14 +9,34 @@ import Link from 'next/link'
 import DeleteConfirmModal from '@/components/editor/DeleteConfirmModal'
 import MediaPickerModal from '@/components/media/MediaPickerModal'
 
+export type ProgramToolItem = {
+  name: string
+  image?: string
+}
+
 type ProgramData = {
   id: string; title: string; slug: string; subtitle: string | null;
   description: string | null; duration: string | null; level: string | null;
   cta_text: string | null; cta_url: string | null; thumbnail_url: string | null;
   banner_url: string | null; status: string; is_visible: boolean | null;
   is_featured: boolean | null; seo_title: string | null; seo_description: string | null;
-  software_tools?: string[] | null;
+  software_tools?: (string | ProgramToolItem)[] | null;
   [key: string]: unknown
+}
+
+export function parseInitialTools(tools: unknown): ProgramToolItem[] {
+  if (!Array.isArray(tools)) return []
+  return tools.map((t) => {
+    if (typeof t === 'string') {
+      const preset = TOOL_PRESETS.find((p) => p.name.toLowerCase() === t.toLowerCase())
+      return { name: t, image: preset?.image || '' }
+    }
+    if (typeof t === 'object' && t !== null && 'name' in t) {
+      const obj = t as { name: string; image?: string; logo?: string }
+      return { name: obj.name, image: obj.image || obj.logo || '' }
+    }
+    return { name: String(t), image: '' }
+  })
 }
 
 export const TOOL_PRESETS = [
@@ -47,7 +67,10 @@ export default function EditProgramClient({ program: initialProgram }: { program
   const [publishing, setPublishing] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [showMediaPicker, setShowMediaPicker] = useState(false)
+  const [showToolMediaPicker, setShowToolMediaPicker] = useState(false)
+  const [toolMediaTargetIndex, setToolMediaTargetIndex] = useState<number | null>(null)
   const [customToolInput, setCustomToolInput] = useState('')
+  const [customToolImage, setCustomToolImage] = useState('')
   const [form, setForm] = useState({
     title: program.title,
     slug: program.slug,
@@ -64,36 +87,86 @@ export default function EditProgramClient({ program: initialProgram }: { program
     is_featured: program.is_featured ?? false,
     seo_title: program.seo_title ?? '',
     seo_description: program.seo_description ?? '',
-    software_tools: Array.isArray(program.software_tools) ? (program.software_tools as string[]) : [],
+    software_tools: parseInitialTools(program.software_tools),
   })
 
-  const toggleTool = (toolName: string) => {
+  const toggleTool = (presetName: string) => {
+    const preset = TOOL_PRESETS.find((p) => p.name.toLowerCase() === presetName.toLowerCase())
     setForm((p) => {
-      const exists = p.software_tools.includes(toolName)
+      const exists = p.software_tools.some((t) => t.name.toLowerCase() === presetName.toLowerCase())
       return {
         ...p,
         software_tools: exists
-          ? p.software_tools.filter((t) => t !== toolName)
-          : [...p.software_tools, toolName],
+          ? p.software_tools.filter((t) => t.name.toLowerCase() !== presetName.toLowerCase())
+          : [...p.software_tools, { name: preset?.name || presetName, image: preset?.image || '' }],
       }
     })
   }
 
-  const addCustomTool = (e: React.FormEvent) => {
-    e.preventDefault()
+  const addCustomTool = (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
     const trimmed = customToolInput.trim()
-    if (!trimmed) return
-    if (!form.software_tools.includes(trimmed)) {
-      setForm((p) => ({ ...p, software_tools: [...p.software_tools, trimmed] }))
+    if (!trimmed) {
+      toast.error('Please enter a tool name')
+      return
     }
-    setCustomToolInput('')
-  }
+    const exists = form.software_tools.some((t) => t.name.toLowerCase() === trimmed.toLowerCase())
+    if (exists) {
+      toast.error(`"${trimmed}" is already in active tools`)
+      return
+    }
+    const preset = TOOL_PRESETS.find((p) => p.name.toLowerCase() === trimmed.toLowerCase())
+    const image = customToolImage || preset?.image || ''
 
-  const removeTool = (toolName: string) => {
     setForm((p) => ({
       ...p,
-      software_tools: p.software_tools.filter((t) => t !== toolName),
+      software_tools: [...p.software_tools, { name: trimmed, image }],
     }))
+    setCustomToolInput('')
+    setCustomToolImage('')
+    toast.success(`✓ Added "${trimmed}" to tools`)
+  }
+
+  const removeTool = (index: number) => {
+    setForm((p) => ({
+      ...p,
+      software_tools: p.software_tools.filter((_, idx) => idx !== index),
+    }))
+  }
+
+  const handleSelectToolMedia = (url: string) => {
+    if (toolMediaTargetIndex !== null) {
+      // Updating logo of an existing tool in the list
+      setForm((p) => {
+        const updated = [...p.software_tools]
+        if (updated[toolMediaTargetIndex]) {
+          updated[toolMediaTargetIndex] = {
+            ...updated[toolMediaTargetIndex],
+            image: url,
+          }
+        }
+        return { ...p, software_tools: updated }
+      })
+      toast.success('✓ Tool logo updated from Media Library')
+      setToolMediaTargetIndex(null)
+    } else {
+      // Logo selected for custom tool input
+      setCustomToolImage(url)
+      if (!customToolInput.trim()) {
+        const filename = url.split('/').pop()?.split('?')[0] || ''
+        const cleanName = filename
+          .replace(/^\d+[-_]/, '')
+          .replace(/\.[^/.]+$/, '')
+          .replace(/[-_]/g, ' ')
+          .replace(/\b\w/g, (c) => c.toUpperCase())
+          .trim()
+        if (cleanName) {
+          setCustomToolInput(cleanName)
+        }
+      }
+      toast.success('✓ Tool logo selected from Media Library')
+    }
+    setShowToolMediaPicker(false)
   }
 
   const handleSave = async (e?: React.FormEvent) => {
@@ -376,9 +449,23 @@ export default function EditProgramClient({ program: initialProgram }: { program
                 Manage the tools and logos displayed under &quot;TOOLS MASTERED&quot; on the program card.
               </p>
             </div>
-            <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
-              {form.software_tools.length} Tools Selected
-            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setToolMediaTargetIndex(null)
+                  setShowToolMediaPicker(true)
+                }}
+                className="btn-secondary py-1.5 px-3 text-xs font-semibold flex items-center gap-1.5 bg-blue-50/80 hover:bg-blue-100 text-[#1748BB] border-blue-200 cursor-pointer"
+                title="Add Tool directly from Media Library"
+              >
+                <FolderOpen className="w-3.5 h-3.5" />
+                <span>+ Add from Media</span>
+              </button>
+              <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
+                {form.software_tools.length} Tools Selected
+              </span>
+            </div>
           </div>
 
           {/* Active Tools List */}
@@ -386,37 +473,60 @@ export default function EditProgramClient({ program: initialProgram }: { program
             <label className="label mb-2">Active Tools for this Program</label>
             {form.software_tools.length > 0 ? (
               <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
-                {form.software_tools.map((toolName, idx) => {
+                {form.software_tools.map((tool, idx) => {
                   const preset = TOOL_PRESETS.find(
-                    (p) => p.name.toLowerCase() === toolName.toLowerCase()
+                    (p) => p.name.toLowerCase() === tool.name.toLowerCase()
                   )
+                  const logoSrc = tool.image || preset?.image || ''
+
                   return (
                     <div
                       key={idx}
-                      className="inline-flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-gray-300 shadow-2xs group hover:border-red-300 transition-colors"
+                      className="inline-flex items-center gap-2 bg-white pl-2 pr-2.5 py-1.5 rounded-lg border border-gray-300 shadow-2xs group hover:border-[#1748BB] transition-colors"
                     >
-                      {preset?.image ? (
-                        <img
-                          src={preset.image}
-                          alt={toolName}
-                          className="w-5 h-5 object-contain shrink-0"
-                          onError={(e) => {
-                            const target = e.currentTarget
-                            if (!target.src.startsWith('http://localhost:3000') && preset.image.startsWith('/')) {
-                              target.src = `http://localhost:3000${preset.image}`
-                            }
-                          }}
-                        />
-                      ) : (
-                        <div className="w-5 h-5 rounded bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold">
-                          {toolName.slice(0, 2).toUpperCase()}
-                        </div>
-                      )}
-                      <span className="text-xs font-semibold text-gray-800">{toolName}</span>
                       <button
                         type="button"
-                        onClick={() => removeTool(toolName)}
-                        className="text-gray-400 hover:text-red-600 p-0.5 rounded transition-colors"
+                        onClick={() => {
+                          setToolMediaTargetIndex(idx)
+                          setShowToolMediaPicker(true)
+                        }}
+                        className="w-6 h-6 rounded bg-gray-50 p-0.5 shrink-0 flex items-center justify-center hover:opacity-80 transition-opacity cursor-pointer relative"
+                        title="Click to change logo from Media Library"
+                      >
+                        {logoSrc ? (
+                          <img
+                            src={logoSrc}
+                            alt={tool.name}
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              const target = e.currentTarget
+                              if (!target.src.startsWith('http://localhost:3000') && logoSrc.startsWith('/')) {
+                                target.src = `http://localhost:3000${logoSrc}`
+                              }
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full rounded bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold">
+                            {tool.name.slice(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                      </button>
+                      <span className="text-xs font-semibold text-gray-800">{tool.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setToolMediaTargetIndex(idx)
+                          setShowToolMediaPicker(true)
+                        }}
+                        className="text-gray-400 hover:text-[#1748BB] p-1 rounded transition-colors cursor-pointer"
+                        title="Change logo from Media Library"
+                      >
+                        <FolderOpen className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeTool(idx)}
+                        className="text-gray-400 hover:text-red-600 p-1 rounded transition-colors cursor-pointer"
                         title="Remove tool"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -427,7 +537,7 @@ export default function EditProgramClient({ program: initialProgram }: { program
               </div>
             ) : (
               <div className="p-4 text-center bg-gray-50 rounded-xl border border-dashed border-gray-300 text-gray-400 text-xs">
-                No tools selected. Click on any preset below to add tools.
+                No tools selected. Click on any preset below or choose from Media Library.
               </div>
             )}
           </div>
@@ -438,7 +548,7 @@ export default function EditProgramClient({ program: initialProgram }: { program
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
               {TOOL_PRESETS.map((preset) => {
                 const isSelected = form.software_tools.some(
-                  (t) => t.toLowerCase() === preset.name.toLowerCase()
+                  (t) => t.name.toLowerCase() === preset.name.toLowerCase()
                 )
                 return (
                   <button
@@ -479,23 +589,87 @@ export default function EditProgramClient({ program: initialProgram }: { program
           </div>
 
           {/* Add Custom Tool */}
-          <div className="pt-2 border-t border-gray-100 flex gap-2 items-center">
-            <input
-              type="text"
-              value={customToolInput}
-              onChange={(e) => setCustomToolInput(e.target.value)}
-              placeholder="Add custom software/tool name (e.g. Figma, DaVinci Resolve)..."
-              className="input text-xs flex-1"
-            />
-            <button
-              type="button"
-              onClick={addCustomTool}
-              className="btn-secondary py-2 px-4 text-xs font-semibold shrink-0"
-            >
-              + Add Tool
-            </button>
+          <div className="pt-3 border-t border-gray-100 space-y-2">
+            <label className="text-xs font-semibold text-gray-700 block">
+              Add Tool with Logo (Enter name or choose from Media Library)
+            </label>
+            <div className="flex flex-wrap sm:flex-nowrap gap-2 items-center">
+              <input
+                type="text"
+                value={customToolInput}
+                onChange={(e) => setCustomToolInput(e.target.value)}
+                placeholder="Tool name (e.g. Figma, DaVinci Resolve, Midjourney)..."
+                className="input text-xs flex-1 min-w-[200px]"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    addCustomTool()
+                  }
+                }}
+              />
+              {customToolImage ? (
+                <div className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 px-2.5 py-1.5 rounded-lg shrink-0">
+                  <img src={customToolImage} alt="Logo" className="w-5 h-5 object-contain" />
+                  <span className="text-[11px] text-blue-800 font-medium">Logo selected</span>
+                  <button
+                    type="button"
+                    onClick={() => setCustomToolImage('')}
+                    className="text-gray-400 hover:text-red-500 text-xs px-1 font-bold cursor-pointer"
+                    title="Clear selected logo"
+                  >
+                    ✕
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setToolMediaTargetIndex(null)
+                      setShowToolMediaPicker(true)
+                    }}
+                    className="text-[11px] text-[#1748BB] underline font-semibold ml-1 cursor-pointer"
+                  >
+                    Change
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setToolMediaTargetIndex(null)
+                    setShowToolMediaPicker(true)
+                  }}
+                  className="btn-secondary py-2 px-3 text-xs font-semibold shrink-0 flex items-center gap-1.5 bg-blue-50/70 hover:bg-blue-100 text-[#1748BB] border-blue-200 cursor-pointer"
+                  title="Choose logo from Media Library"
+                >
+                  <FolderOpen className="w-3.5 h-3.5" />
+                  <span>Choose Logo from Media</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => addCustomTool()}
+                className="btn-primary py-2 px-4 text-xs font-semibold shrink-0 cursor-pointer"
+              >
+                + Add Tool
+              </button>
+            </div>
           </div>
         </div>
+
+        {/* Media Picker Modal for Tools */}
+        <MediaPickerModal
+          isOpen={showToolMediaPicker}
+          onClose={() => {
+            setShowToolMediaPicker(false)
+            setToolMediaTargetIndex(null)
+          }}
+          onSelect={handleSelectToolMedia}
+          allowedType="image"
+          title={
+            toolMediaTargetIndex !== null && form.software_tools[toolMediaTargetIndex]
+              ? `Choose Logo for "${form.software_tools[toolMediaTargetIndex].name}"`
+              : 'Choose Tool Logo from Media Library'
+          }
+        />
 
         {/* SEO */}
         <div className="card p-6 space-y-4">
