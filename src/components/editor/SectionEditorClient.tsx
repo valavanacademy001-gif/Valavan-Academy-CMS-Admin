@@ -1,12 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { ArrowLeft, Save, Loader2, Plus, ChevronRight, Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
 import FieldEditor from './FieldEditor'
 import AddFieldModal from './AddFieldModal'
+import SkillsCardsEditor, { SkillCardItem } from './SkillsCardsEditor'
+import MentorsEditor, { MentorItem } from './MentorsEditor'
 
 type FieldValue = {
   id: string; field_id: string; value_text: string | null; value_json: unknown;
@@ -36,6 +38,14 @@ export default function SectionEditorClient({
   section: SectionData
   initialFields: FieldData[]
 }) {
+  const isCardsSection =
+    section.slug === 'skills_money' ||
+    initialFields.some((f) => /^card_\d+_title$/.test(f.name))
+
+  const isTeamSection =
+    section.slug === 'team' ||
+    initialFields.some((f) => /^mentor_\d+_name$/.test(f.name))
+
   const [fields, setFields] = useState(initialFields)
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(() => {
     const values: Record<string, string> = {}
@@ -47,14 +57,112 @@ export default function SectionEditorClient({
     })
     return values
   })
+
+  // Extract initial cards if this is a card-driven section (e.g. skills_money)
+  const initialCards = useMemo(() => {
+    if (!isCardsSection) return []
+    const cardMap: Record<number, { title: string; image: string }> = {}
+
+    initialFields.forEach((f) => {
+      const match = f.name.match(/^card_(\d+)_(title|image)$/)
+      if (match) {
+        const idx = parseInt(match[1], 10)
+        if (!cardMap[idx]) cardMap[idx] = { title: '', image: '' }
+        const val = Array.isArray(f.value) ? f.value[0] : f.value
+        const strVal = val ? (val.value_text ?? val.value_url ?? '') : ''
+        if (match[2] === 'title') cardMap[idx].title = strVal
+        if (match[2] === 'image') cardMap[idx].image = strVal
+      }
+    })
+
+    const sortedIndices = Object.keys(cardMap)
+      .map(Number)
+      .sort((a, b) => a - b)
+
+    return sortedIndices.map((idx) => ({
+      id: `card-${idx}-${Date.now()}`,
+      title: cardMap[idx].title,
+      image: cardMap[idx].image,
+    }))
+  }, [initialFields, isCardsSection])
+
+  // Extract initial mentors if this is a team/mentors section (e.g. about.team)
+  const initialMentors = useMemo(() => {
+    if (!isTeamSection) return []
+    const mentorMap: Record<number, Partial<MentorItem>> = {}
+
+    initialFields.forEach((f) => {
+      const match = f.name.match(/^mentor_(\d+)_(name|role|designation|specialty|bio|experience|skills|image)$/)
+      if (match) {
+        const idx = parseInt(match[1], 10)
+        if (!mentorMap[idx]) {
+          mentorMap[idx] = {
+            id: `mentor-${idx}`,
+            name: '',
+            role: '',
+            designation: '',
+            specialty: '',
+            bio: '',
+            experience: '5+ Years',
+            skills: '',
+            image: '',
+          }
+        }
+        const val = Array.isArray(f.value) ? f.value[0] : f.value
+        const strVal = val ? (val.value_text ?? val.value_url ?? '') : ''
+        const fieldKey = match[2] as keyof MentorItem
+        ;(mentorMap[idx] as any)[fieldKey] = strVal
+      }
+    })
+
+    const sortedIndices = Object.keys(mentorMap)
+      .map(Number)
+      .sort((a, b) => a - b)
+
+    return sortedIndices.map((idx) => ({
+      id: `mentor-${idx}-${Date.now()}`,
+      name: mentorMap[idx].name || '',
+      role: mentorMap[idx].role || '',
+      designation: mentorMap[idx].designation || '',
+      specialty: mentorMap[idx].specialty || '',
+      bio: mentorMap[idx].bio || '',
+      experience: mentorMap[idx].experience || '5+ Years',
+      skills: mentorMap[idx].skills || '',
+      image: mentorMap[idx].image || '',
+    }))
+  }, [initialFields, isTeamSection])
+
+  const [cards, setCards] = useState<SkillCardItem[]>(initialCards)
+  const [mentors, setMentors] = useState<MentorItem[]>(initialMentors)
   const [saving, setSaving] = useState(false)
   const [publishing, setPublishing] = useState(false)
   const [isVisible, setIsVisible] = useState(section.is_visible)
   const [showAddField, setShowAddField] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
 
+  // Non-card / Non-mentor header fields
+  const nonDynamicFields = useMemo(() => {
+    if (isCardsSection) {
+      return fields.filter((f) => !/^card_\d+_(title|image)$/.test(f.name))
+    }
+    if (isTeamSection) {
+      return fields.filter((f) => !/^mentor_\d+_/.test(f.name))
+    }
+    return fields
+  }, [fields, isCardsSection, isTeamSection])
+
   const handleValueChange = (fieldId: string, value: string) => {
     setFieldValues((prev) => ({ ...prev, [fieldId]: value }))
+    setHasChanges(true)
+  }
+
+  const handleCardsChange = (newCards: SkillCardItem[]) => {
+    setCards(newCards)
+    setHasChanges(true)
+  }
+
+  const handleMentorsChange = (newMentors: MentorItem[]) => {
+    setMentors(newMentors)
     setHasChanges(true)
   }
 
@@ -63,7 +171,8 @@ export default function SectionEditorClient({
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    for (const field of fields) {
+    // 1. Save standard (or header) fields
+    for (const field of nonDynamicFields) {
       const value = fieldValues[field.id] ?? ''
       const existingValue = Array.isArray(field.value) ? field.value[0] : field.value
 
@@ -86,6 +195,254 @@ export default function SectionEditorClient({
       }
     }
 
+    // 2. If this is a cards section (e.g. skills_money), sync all cards dynamically
+    if (isCardsSection) {
+      for (let i = 0; i < cards.length; i++) {
+        const card = cards[i]
+        const cardIdx = i + 1
+        const titleName = `card_${cardIdx}_title`
+        const titleLabel = `Card ${cardIdx}: Title`
+        const imageName = `card_${cardIdx}_image`
+        const imageLabel = `Card ${cardIdx}: Image Card`
+
+        // Ensure title field exists
+        let { data: titleField } = await supabase
+          .from('fields')
+          .select('id')
+          .eq('section_id', section.id)
+          .eq('name', titleName)
+          .maybeSingle()
+
+        if (!titleField) {
+          const { data: ins } = await supabase
+            .from('fields')
+            .insert({
+              section_id: section.id,
+              name: titleName,
+              label: titleLabel,
+              field_type: 'short_text',
+              sort_order: 10 + i * 2,
+            })
+            .select('id')
+            .single()
+          titleField = ins
+        } else {
+          await supabase
+            .from('fields')
+            .update({
+              label: titleLabel,
+              sort_order: 10 + i * 2,
+            })
+            .eq('id', titleField.id)
+        }
+
+        // Ensure image field exists
+        let { data: imageField } = await supabase
+          .from('fields')
+          .select('id')
+          .eq('section_id', section.id)
+          .eq('name', imageName)
+          .maybeSingle()
+
+        if (!imageField) {
+          const { data: ins } = await supabase
+            .from('fields')
+            .insert({
+              section_id: section.id,
+              name: imageName,
+              label: imageLabel,
+              field_type: 'image',
+              sort_order: 11 + i * 2,
+            })
+            .select('id')
+            .single()
+          imageField = ins
+        } else {
+          await supabase
+            .from('fields')
+            .update({
+              label: imageLabel,
+              sort_order: 11 + i * 2,
+            })
+            .eq('id', imageField.id)
+        }
+
+        // Upsert title field value
+        if (titleField?.id) {
+          const { data: existingTitleVal } = await supabase
+            .from('field_values')
+            .select('id')
+            .eq('field_id', titleField.id)
+            .maybeSingle()
+
+          if (existingTitleVal?.id) {
+            await supabase
+              .from('field_values')
+              .update({
+                value_text: card.title,
+                updated_by: user?.id,
+                is_draft: true,
+              })
+              .eq('id', existingTitleVal.id)
+          } else {
+            await supabase.from('field_values').insert({
+              field_id: titleField.id,
+              section_id: section.id,
+              page_id: page.id,
+              value_text: card.title,
+              updated_by: user?.id,
+              is_draft: true,
+            })
+          }
+        }
+
+        // Upsert image field value
+        if (imageField?.id) {
+          const { data: existingImageVal } = await supabase
+            .from('field_values')
+            .select('id')
+            .eq('field_id', imageField.id)
+            .maybeSingle()
+
+          if (existingImageVal?.id) {
+            await supabase
+              .from('field_values')
+              .update({
+                value_text: card.image,
+                value_url: card.image,
+                updated_by: user?.id,
+                is_draft: true,
+              })
+              .eq('id', existingImageVal.id)
+          } else {
+            await supabase.from('field_values').insert({
+              field_id: imageField.id,
+              section_id: section.id,
+              page_id: page.id,
+              value_text: card.image,
+              value_url: card.image,
+              updated_by: user?.id,
+              is_draft: true,
+            })
+          }
+        }
+      }
+
+      // Cleanup excess fields if cards were deleted
+      const { data: allSectionFields } = await supabase
+        .from('fields')
+        .select('id, name')
+        .eq('section_id', section.id)
+
+      if (allSectionFields) {
+        for (const ef of allSectionFields) {
+          const match = ef.name.match(/^card_(\d+)_(title|image)$/)
+          if (match) {
+            const idx = parseInt(match[1], 10)
+            if (idx > cards.length) {
+              await supabase.from('field_values').delete().eq('field_id', ef.id)
+              await supabase.from('fields').delete().eq('id', ef.id)
+            }
+          }
+        }
+      }
+    }
+
+    // 3. If this is a team/mentors section, sync all mentors dynamically
+    if (isTeamSection) {
+      for (let i = 0; i < mentors.length; i++) {
+        const m = mentors[i]
+        const idx = i + 1
+        const baseOrder = 10 + i * 10
+
+        const mentorFieldsConfig = [
+          { name: `mentor_${idx}_name`, label: `Mentor ${idx}: Name`, field_type: 'short_text', val: m.name, order: baseOrder + 1 },
+          { name: `mentor_${idx}_role`, label: `Mentor ${idx}: Front Role Badge`, field_type: 'short_text', val: m.role, order: baseOrder + 2 },
+          { name: `mentor_${idx}_designation`, label: `Mentor ${idx}: Designation`, field_type: 'short_text', val: m.designation, order: baseOrder + 3 },
+          { name: `mentor_${idx}_specialty`, label: `Mentor ${idx}: Specialization`, field_type: 'short_text', val: m.specialty, order: baseOrder + 4 },
+          { name: `mentor_${idx}_bio`, label: `Mentor ${idx}: Bio / About`, field_type: 'long_text', val: m.bio, order: baseOrder + 5 },
+          { name: `mentor_${idx}_experience`, label: `Mentor ${idx}: Experience`, field_type: 'short_text', val: m.experience, order: baseOrder + 6 },
+          { name: `mentor_${idx}_skills`, label: `Mentor ${idx}: Key Skills & Tools`, field_type: 'short_text', val: m.skills, order: baseOrder + 7 },
+          { name: `mentor_${idx}_image`, label: `Mentor ${idx}: Photo Image`, field_type: 'image', val: m.image, order: baseOrder + 8 },
+        ]
+
+        for (const fc of mentorFieldsConfig) {
+          let { data: fld } = await supabase
+            .from('fields')
+            .select('id')
+            .eq('section_id', section.id)
+            .eq('name', fc.name)
+            .maybeSingle()
+
+          if (!fld) {
+            const { data: ins } = await supabase
+              .from('fields')
+              .insert({
+                section_id: section.id,
+                name: fc.name,
+                label: fc.label,
+                field_type: fc.field_type,
+                sort_order: fc.order,
+              })
+              .select('id')
+              .single()
+            fld = ins
+          } else {
+            await supabase
+              .from('fields')
+              .update({
+                label: fc.label,
+                sort_order: fc.order,
+              })
+              .eq('id', fld.id)
+          }
+
+          if (fld?.id) {
+            const { data: valRow } = await supabase
+              .from('field_values')
+              .select('id')
+              .eq('field_id', fld.id)
+              .maybeSingle()
+
+            const valPayload = {
+              section_id: section.id,
+              field_id: fld.id,
+              page_id: page.id,
+              value_text: fc.val,
+              value_url: fc.field_type === 'image' ? fc.val : null,
+              updated_by: user?.id,
+              is_draft: true,
+            }
+
+            if (valRow?.id) {
+              await supabase.from('field_values').update(valPayload).eq('id', valRow.id)
+            } else {
+              await supabase.from('field_values').insert(valPayload)
+            }
+          }
+        }
+      }
+
+      // Cleanup excess mentors if mentors were deleted
+      const { data: allSectionFields } = await supabase
+        .from('fields')
+        .select('id, name')
+        .eq('section_id', section.id)
+
+      if (allSectionFields) {
+        for (const ef of allSectionFields) {
+          const match = ef.name.match(/^mentor_(\d+)_/)
+          if (match) {
+            const idx = parseInt(match[1], 10)
+            if (idx > mentors.length) {
+              await supabase.from('field_values').delete().eq('field_id', ef.id)
+              await supabase.from('fields').delete().eq('id', ef.id)
+            }
+          }
+        }
+      }
+    }
+
     // Update section visibility
     await supabase.from('sections').update({ is_visible: isVisible, updated_by: user?.id }).eq('id', section.id)
 
@@ -99,16 +456,22 @@ export default function SectionEditorClient({
     setPublishing(true)
     const supabase = createClient()
 
-    // Move draft values to published
-    for (const field of fields) {
-      const value = fieldValues[field.id] ?? ''
-      await supabase.from('field_values')
-        .update({
-          is_draft: false,
-          published_value_text: value,
-        })
-        .eq('field_id', field.id)
-        .eq('section_id', section.id)
+    // Query all fields and copy draft values to published values
+    const { data: allFieldValues } = await supabase
+      .from('field_values')
+      .select('id, field_id, value_text, value_url')
+      .eq('section_id', section.id)
+
+    if (allFieldValues) {
+      for (const fv of allFieldValues) {
+        await supabase
+          .from('field_values')
+          .update({
+            is_draft: false,
+            published_value_text: fv.value_text || fv.value_url || '',
+          })
+          .eq('id', fv.id)
+      }
     }
 
     setPublishing(false)
@@ -153,40 +516,66 @@ export default function SectionEditorClient({
         </div>
       </div>
 
-      {/* Fields */}
-      <div className="card divide-y divide-gray-100">
-        <div className="flex items-center justify-between p-5">
-          <h2 className="text-sm font-semibold text-gray-700">Content Fields</h2>
-          <button onClick={() => setShowAddField(true)} className="btn-secondary py-1.5 text-xs">
-            <Plus className="w-3.5 h-3.5" />
-            Add Field
-          </button>
-        </div>
-
-        {fields.length === 0 ? (
-          <div className="py-10 text-center text-gray-400">
-            <p className="text-sm">No fields in this section yet.</p>
-            <button onClick={() => setShowAddField(true)} className="btn-primary mt-3 inline-flex">
-              <Plus className="w-4 h-4" />
-              Add First Field
-            </button>
+      {/* Non-dynamic Header Settings */}
+      {nonDynamicFields.length > 0 && (
+        <div className="card divide-y divide-gray-100">
+          <div className="flex items-center justify-between p-5">
+            <div>
+              <h2 className="text-sm font-semibold text-gray-700">Section Header &amp; Texts</h2>
+              <p className="text-xs text-gray-400">Configure title, eyebrow, badge, description for this section</p>
+            </div>
+            {!isCardsSection && !isTeamSection && (
+              <button onClick={() => setShowAddField(true)} className="btn-secondary py-1.5 text-xs">
+                <Plus className="w-3.5 h-3.5" />
+                Add Field
+              </button>
+            )}
           </div>
-        ) : (
-          fields.map((field) => (
+
+          {nonDynamicFields.map((field) => (
             <FieldEditor
               key={field.id}
               field={field}
               value={fieldValues[field.id] ?? ''}
               onChange={(val) => handleValueChange(field.id, val)}
             />
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
 
-      {/* Actions */}
-      <div className="card p-4 flex items-center justify-between">
-        <div className="text-xs text-gray-400">
-          {hasChanges ? '⚠ Unsaved changes' : '✓ All changes saved'}
+      {/* Specialized Editors */}
+      {isCardsSection ? (
+        <div className="card p-5">
+          <SkillsCardsEditor cards={cards} onChange={handleCardsChange} />
+        </div>
+      ) : isTeamSection ? (
+        <div className="card p-5">
+          <MentorsEditor mentors={mentors} onChange={handleMentorsChange} />
+        </div>
+      ) : fields.length === 0 ? (
+        <div className="card py-10 text-center text-gray-400">
+          <p className="text-sm">No fields in this section yet.</p>
+          <button onClick={() => setShowAddField(true)} className="btn-primary mt-3 inline-flex">
+            <Plus className="w-4 h-4" />
+            Add First Field
+          </button>
+        </div>
+      ) : null}
+
+      {/* Actions Bar */}
+      <div className="card p-4 flex items-center justify-between sticky bottom-4 shadow-lg bg-white/95 backdrop-blur-sm z-30">
+        <div className="text-xs text-gray-500 flex items-center gap-1.5 font-medium">
+          {hasChanges ? (
+            <span className="text-amber-600 flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+              Unsaved changes
+            </span>
+          ) : (
+            <span className="text-emerald-600 flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              All changes saved
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Link href={`/dashboard/pages/${page.id}`} className="btn-secondary">
