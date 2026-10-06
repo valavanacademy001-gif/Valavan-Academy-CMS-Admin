@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   GripVertical,
   Plus,
@@ -35,9 +35,20 @@ interface SkillsCardsEditorProps {
 export default function SkillsCardsEditor({ cards, onChange }: SkillsCardsEditorProps) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+  const [draggableIndex, setDraggableIndex] = useState<number | null>(null)
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null)
   const [activeMediaPickerIndex, setActiveMediaPickerIndex] = useState<number | null>(null)
   const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({})
+
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (draggedIndex === null) {
+        setDraggableIndex(null)
+      }
+    }
+    window.addEventListener('mouseup', handleGlobalMouseUp)
+    return () => window.removeEventListener('mouseup', handleGlobalMouseUp)
+  }, [draggedIndex])
 
   // Reorder helper
   const moveCard = (fromIndex: number, toIndex: number) => {
@@ -159,8 +170,12 @@ export default function SkillsCardsEditor({ cards, onChange }: SkillsCardsEditor
             return (
               <div
                 key={card.id}
-                draggable
+                draggable={draggableIndex === index}
                 onDragStart={(e) => {
+                  if (draggableIndex !== index) {
+                    e.preventDefault()
+                    return
+                  }
                   setDraggedIndex(index)
                   e.dataTransfer.effectAllowed = 'move'
                   e.dataTransfer.setData('text/plain', index.toString())
@@ -184,10 +199,12 @@ export default function SkillsCardsEditor({ cards, onChange }: SkillsCardsEditor
                   }
                   setDraggedIndex(null)
                   setDragOverIndex(null)
+                  setDraggableIndex(null)
                 }}
                 onDragEnd={() => {
                   setDraggedIndex(null)
                   setDragOverIndex(null)
+                  setDraggableIndex(null)
                 }}
                 className={`bg-white rounded-xl border transition-all duration-200 overflow-hidden shadow-xs ${
                   isDragging
@@ -202,6 +219,7 @@ export default function SkillsCardsEditor({ cards, onChange }: SkillsCardsEditor
                   {/* Left: Drag Handle + Badge */}
                   <div className="flex items-center gap-2">
                     <div
+                      onMouseDown={() => setDraggableIndex(index)}
                       className="cursor-grab active:cursor-grabbing p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-200/60 rounded transition-colors"
                       title="Drag to reorder card"
                     >
