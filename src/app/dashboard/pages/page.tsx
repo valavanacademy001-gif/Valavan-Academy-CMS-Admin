@@ -67,13 +67,14 @@ export default async function PagesListPage({
           ))}
         </div>
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none z-10" />
           <form>
             <input
               name="q"
               defaultValue={params.q}
               placeholder="Search pages..."
-              className="input pl-9"
+              className="input !pl-10"
+              style={{ paddingLeft: '2.5rem' }}
             />
           </form>
         </div>

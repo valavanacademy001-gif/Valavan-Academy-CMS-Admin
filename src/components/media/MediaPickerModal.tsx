@@ -127,13 +127,14 @@ export default function MediaPickerModal({
         {/* Search & Filter bar */}
         <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row gap-3 bg-gray-50/50 shrink-0">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by file name or keyword (e.g. certificate, logo, team, hero)..."
-              className="input pl-9 text-sm bg-white"
+              className="input !pl-10 text-sm bg-white"
+              style={{ paddingLeft: '2.5rem' }}
             />
           </div>
           {allowedType === 'all' && (

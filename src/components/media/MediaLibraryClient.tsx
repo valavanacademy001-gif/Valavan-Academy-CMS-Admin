@@ -89,8 +89,8 @@ export default function MediaLibraryClient({ initialMedia }: { initialMedia: Med
           ))}
         </div>
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search media..." className="input pl-9" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none z-10" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search media..." className="input !pl-10" style={{ paddingLeft: '2.5rem' }} />
         </div>
         <label className={`btn-primary cursor-pointer ${uploading ? 'opacity-60 pointer-events-none' : ''}`}>
           {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}

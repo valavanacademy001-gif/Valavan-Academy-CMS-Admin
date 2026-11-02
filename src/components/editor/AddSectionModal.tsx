@@ -104,13 +104,14 @@ export default function AddSectionModal({
         {/* Search */}
         <div className="p-4 border-b border-gray-50">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none z-10" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search section types..."
-              className="input pl-9"
+              className="input !pl-10"
+              style={{ paddingLeft: '2.5rem' }}
               autoFocus
             />
           </div>

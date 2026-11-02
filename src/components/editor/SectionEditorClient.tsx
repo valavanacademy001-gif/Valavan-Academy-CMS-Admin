@@ -9,6 +9,7 @@ import FieldEditor from './FieldEditor'
 import AddFieldModal from './AddFieldModal'
 import SkillsCardsEditor, { SkillCardItem } from './SkillsCardsEditor'
 import MentorsEditor, { MentorItem } from './MentorsEditor'
+import FooterEditor, { FooterData, FooterLinkItem } from './FooterEditor'
 
 type FieldValue = {
   id: string; field_id: string; value_text: string | null; value_json: unknown;
@@ -45,6 +46,10 @@ export default function SectionEditorClient({
   const isTeamSection =
     section.slug === 'team' ||
     initialFields.some((f) => /^mentor_\d+_name$/.test(f.name))
+
+  const isFooterSection =
+    section.slug === 'footer' ||
+    initialFields.some((f) => f.name === 'navigate_links' || f.name === 'reach_phone')
 
   const [fields, setFields] = useState(initialFields)
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(() => {
@@ -132,16 +137,100 @@ export default function SectionEditorClient({
     }))
   }, [initialFields, isTeamSection])
 
+  // Extract initial footer data if this is a footer section
+  const initialFooterData: FooterData = useMemo(() => {
+    if (!isFooterSection) {
+      return {
+        brand_description: '',
+        facebook_url: '',
+        instagram_url: '',
+        youtube_url: '',
+        linkedin_url: '',
+        reach_phone: '',
+        reach_email: '',
+        reach_address: '',
+        reach_hours: '',
+        copyright_text: '',
+        bottom_tagline: '',
+        navigate_links: [],
+        programs_links: [],
+        account_links: [],
+      }
+    }
+
+    const getVal = (name: string, fallback: string = '') => {
+      const fld = initialFields.find((f) => f.name === name)
+      if (!fld) return fallback
+      const v = Array.isArray(fld.value) ? fld.value[0] : fld.value
+      return v?.value_text ?? v?.value_url ?? fallback
+    }
+
+    const getJsonVal = (name: string, fallback: FooterLinkItem[] = []) => {
+      const fld = initialFields.find((f) => f.name === name)
+      if (!fld) return fallback
+      const v = Array.isArray(fld.value) ? fld.value[0] : fld.value
+      if (v?.value_json && Array.isArray(v.value_json)) {
+        return v.value_json as FooterLinkItem[]
+      }
+      if (typeof v?.value_text === 'string' && v.value_text.startsWith('[')) {
+        try {
+          return JSON.parse(v.value_text)
+        } catch {}
+      }
+      return fallback
+    }
+
+    return {
+      brand_description: getVal(
+        'brand_description',
+        'Graphic Design · Video Editing · Web Design · UI/UX · AI Tools · Digital Skills — taught in Tamil, built for careers.'
+      ),
+      facebook_url: getVal('facebook_url', 'https://www.facebook.com/ValavanAcademy'),
+      instagram_url: getVal('instagram_url', 'https://www.instagram.com/valavanacademy'),
+      youtube_url: getVal('youtube_url', 'https://www.youtube.com/@ValavanAcademyofficial'),
+      linkedin_url: getVal('linkedin_url', 'https://www.linkedin.com/in/valavan-p-813383337/'),
+      reach_phone: getVal('reach_phone', '+91 93428 96977'),
+      reach_email: getVal('reach_email', 'valavanacademy@gmail.com'),
+      reach_address: getVal(
+        'reach_address',
+        'SF No 157/3, Mandabam Street, Salaipettai, Pernambut Taluk, Vellore Dist - 635810'
+      ),
+      reach_hours: getVal('reach_hours', 'Mon–Sat · 9am–7pm IST'),
+      copyright_text: getVal('copyright_text', '© 2026 Valavan Academy. All rights reserved.'),
+      bottom_tagline: getVal('bottom_tagline', 'Tamil-first Creative Learning Academy'),
+      navigate_links: getJsonVal('navigate_links', [
+        { id: '1', label: 'Home', href: '/' },
+        { id: '2', label: 'Programs', href: '/programs' },
+        { id: '3', label: 'About', href: '/about' },
+        { id: '4', label: 'Community', href: '/community' },
+        { id: '5', label: 'Contact', href: '/contact' },
+        { id: '6', label: 'Terms & Conditions', href: '/terms-conditions' },
+        { id: '7', label: 'Privacy Policy', href: '/privacy-policy' },
+      ]),
+      programs_links: getJsonVal('programs_links', [
+        { id: '1', label: '90-Day Graphic Design', href: '/programs/90-days-graphic-design' },
+        { id: '2', label: 'Full Stack Creator', href: '/programs/full-stack-creator' },
+      ]),
+      account_links: getJsonVal('account_links', [
+        { id: '1', label: 'Log In', href: 'https://learn.valavanacademy.com/clientapp/login' },
+        { id: '2', label: 'Get Started', href: 'https://rzp.io/rzp/4ydecO7' },
+        { id: '3', label: 'TNCC Community', href: 'https://tamilnaducreatorsclub.com/' },
+      ]),
+    }
+  }, [initialFields, isFooterSection])
+
   const [cards, setCards] = useState<SkillCardItem[]>(initialCards)
   const [mentors, setMentors] = useState<MentorItem[]>(initialMentors)
+  const [footerData, setFooterData] = useState<FooterData>(initialFooterData)
   const [saving, setSaving] = useState(false)
   const [publishing, setPublishing] = useState(false)
   const [isVisible, setIsVisible] = useState(section.is_visible)
   const [showAddField, setShowAddField] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
 
-  // Non-card / Non-mentor header fields
+  // Non-card / Non-mentor / Non-footer header fields
   const nonDynamicFields = useMemo(() => {
+    if (isFooterSection) return []
     if (isCardsSection) {
       return fields.filter((f) => !/^card_\d+_(title|image)$/.test(f.name))
     }
@@ -149,7 +238,7 @@ export default function SectionEditorClient({
       return fields.filter((f) => !/^mentor_\d+_/.test(f.name))
     }
     return fields
-  }, [fields, isCardsSection, isTeamSection])
+  }, [fields, isCardsSection, isTeamSection, isFooterSection])
 
   const handleValueChange = (fieldId: string, value: string) => {
     setFieldValues((prev) => ({ ...prev, [fieldId]: value }))
@@ -163,6 +252,11 @@ export default function SectionEditorClient({
 
   const handleMentorsChange = (newMentors: MentorItem[]) => {
     setMentors(newMentors)
+    setHasChanges(true)
+  }
+
+  const handleFooterChange = (newFooterData: FooterData) => {
+    setFooterData(newFooterData)
     setHasChanges(true)
   }
 
@@ -443,6 +537,77 @@ export default function SectionEditorClient({
       }
     }
 
+    // 4. If this is a footer section, sync all footer fields dynamically
+    if (isFooterSection) {
+      const footerFieldsConfig = [
+        { name: 'brand_description', label: 'Brand Description', field_type: 'long_text', val: footerData.brand_description, is_json: false },
+        { name: 'facebook_url', label: 'Facebook URL', field_type: 'url', val: footerData.facebook_url, is_json: false },
+        { name: 'instagram_url', label: 'Instagram URL', field_type: 'url', val: footerData.instagram_url, is_json: false },
+        { name: 'youtube_url', label: 'YouTube URL', field_type: 'url', val: footerData.youtube_url, is_json: false },
+        { name: 'linkedin_url', label: 'LinkedIn URL', field_type: 'url', val: footerData.linkedin_url, is_json: false },
+        { name: 'reach_phone', label: 'Reach Us: Phone', field_type: 'short_text', val: footerData.reach_phone, is_json: false },
+        { name: 'reach_email', label: 'Reach Us: Email', field_type: 'short_text', val: footerData.reach_email, is_json: false },
+        { name: 'reach_address', label: 'Reach Us: Address', field_type: 'long_text', val: footerData.reach_address, is_json: false },
+        { name: 'reach_hours', label: 'Reach Us: Working Hours', field_type: 'short_text', val: footerData.reach_hours, is_json: false },
+        { name: 'copyright_text', label: 'Copyright Text', field_type: 'short_text', val: footerData.copyright_text, is_json: false },
+        { name: 'bottom_tagline', label: 'Bottom Tagline', field_type: 'short_text', val: footerData.bottom_tagline, is_json: false },
+        { name: 'navigate_links', label: 'Navigate Links', field_type: 'json', val: footerData.navigate_links, is_json: true },
+        { name: 'programs_links', label: 'Programs Links', field_type: 'json', val: footerData.programs_links, is_json: true },
+        { name: 'account_links', label: 'Account Links', field_type: 'json', val: footerData.account_links, is_json: true },
+      ]
+
+      for (const fc of footerFieldsConfig) {
+        let { data: fld } = await supabase
+          .from('fields')
+          .select('id')
+          .eq('section_id', section.id)
+          .eq('name', fc.name)
+          .maybeSingle()
+
+        if (!fld) {
+          const { data: ins } = await supabase
+            .from('fields')
+            .insert({
+              section_id: section.id,
+              name: fc.name,
+              label: fc.label,
+              field_type: fc.field_type,
+              sort_order: 1,
+            })
+            .select('id')
+            .single()
+          fld = ins
+        }
+
+        if (fld?.id) {
+          const { data: existingVal } = await supabase
+            .from('field_values')
+            .select('id')
+            .eq('field_id', fld.id)
+            .maybeSingle()
+
+          const valPayload = {
+            field_id: fld.id,
+            section_id: section.id,
+            page_id: page.id,
+            value_text: fc.is_json ? JSON.stringify(fc.val) : (fc.val as string),
+            value_url: fc.field_type === 'url' ? (fc.val as string) : null,
+            value_json: fc.is_json ? fc.val : null,
+            published_value_text: fc.is_json ? JSON.stringify(fc.val) : (fc.val as string),
+            published_value_json: fc.is_json ? fc.val : null,
+            updated_by: user?.id,
+            is_draft: true,
+          }
+
+          if (existingVal?.id) {
+            await supabase.from('field_values').update(valPayload).eq('id', existingVal.id)
+          } else {
+            await supabase.from('field_values').insert(valPayload)
+          }
+        }
+      }
+    }
+
     // Update section visibility
     await supabase.from('sections').update({ is_visible: isVisible, updated_by: user?.id }).eq('id', section.id)
 
@@ -459,7 +624,7 @@ export default function SectionEditorClient({
     // Query all fields and copy draft values to published values
     const { data: allFieldValues } = await supabase
       .from('field_values')
-      .select('id, field_id, value_text, value_url')
+      .select('id, field_id, value_text, value_url, value_json')
       .eq('section_id', section.id)
 
     if (allFieldValues) {
@@ -469,6 +634,7 @@ export default function SectionEditorClient({
           .update({
             is_draft: false,
             published_value_text: fv.value_text || fv.value_url || '',
+            published_value_json: fv.value_json || null,
           })
           .eq('id', fv.id)
       }
@@ -484,7 +650,7 @@ export default function SectionEditorClient({
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
       {/* Breadcrumb */}
       <div>
         <div className="flex items-center gap-1 text-xs text-gray-400 mb-2">
@@ -524,7 +690,7 @@ export default function SectionEditorClient({
               <h2 className="text-sm font-semibold text-gray-700">Section Header &amp; Texts</h2>
               <p className="text-xs text-gray-400">Configure title, eyebrow, badge, description for this section</p>
             </div>
-            {!isCardsSection && !isTeamSection && (
+            {!isCardsSection && !isTeamSection && !isFooterSection && (
               <button onClick={() => setShowAddField(true)} className="btn-secondary py-1.5 text-xs">
                 <Plus className="w-3.5 h-3.5" />
                 Add Field
@@ -544,7 +710,9 @@ export default function SectionEditorClient({
       )}
 
       {/* Specialized Editors */}
-      {isCardsSection ? (
+      {isFooterSection ? (
+        <FooterEditor data={footerData} onChange={handleFooterChange} />
+      ) : isCardsSection ? (
         <div className="card p-5">
           <SkillsCardsEditor cards={cards} onChange={handleCardsChange} />
         </div>
