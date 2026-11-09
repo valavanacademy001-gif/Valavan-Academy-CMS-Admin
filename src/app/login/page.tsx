@@ -13,16 +13,19 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+    setErrorMessage(null)
 
     try {
       const supabase = createClient()
       const { error } = await supabase.auth.signInWithPassword({ email, password })
 
       if (error) {
+        setErrorMessage(error.message)
         toast.error(error.message || 'Invalid email or password')
         return
       }
@@ -31,6 +34,7 @@ export default function LoginPage() {
       router.push('/dashboard')
       router.refresh()
     } catch {
+      setErrorMessage('Something went wrong. Please try again.')
       toast.error('Something went wrong. Please try again.')
     } finally {
       setLoading(false)
@@ -64,6 +68,25 @@ export default function LoginPage() {
         {/* Login Card */}
         <div className="bg-white border border-gray-200/80 rounded-2xl p-8 shadow-[0_20px_50px_rgba(0,0,0,0.06)]">
           <h2 className="text-xl font-bold text-gray-900 mb-6 tracking-tight">Sign in to CMS</h2>
+
+          {errorMessage && (
+            <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs sm:text-sm space-y-2">
+              <div className="font-semibold flex items-center gap-1.5 text-red-900">
+                <span>⚠ Authentication Error</span>
+              </div>
+              <p className="leading-relaxed">{errorMessage}</p>
+              {errorMessage.includes('exceed_egress_quota') && (
+                <div className="pt-2 border-t border-red-200 text-xs text-red-700 space-y-1">
+                  <p className="font-semibold text-red-900">How to restore Supabase service:</p>
+                  <ol className="list-decimal pl-4 space-y-1">
+                    <li>Go to your Supabase project dashboard (Settings &gt; Billing).</li>
+                    <li>Remove Spend Caps or upgrade the project plan to restore egress access.</li>
+                    <li>Or point <code className="bg-red-100 px-1 py-0.5 rounded font-mono">.env.local</code> to an active Supabase project.</li>
+                  </ol>
+                </div>
+              )}
+            </div>
+          )}
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>

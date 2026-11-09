@@ -437,7 +437,7 @@ async function syncAll() {
     ],
     'contact.contact_info': [
       { name: 'email', label: 'Contact Email', field_type: 'email', value: 'valavanacademy001@gmail.com', sort_order: 1 },
-      { name: 'phone', label: 'Contact Phone', field_type: 'short_text', value: '+91 93452 79541', sort_order: 2 },
+      { name: 'phone', label: 'Contact Phone', field_type: 'short_text', value: '+91 93428 96977', sort_order: 2 },
       { name: 'address', label: 'Academy Address', field_type: 'long_text', value: 'Valavan Academy, Tirupattur / Vellore District, Tamil Nadu, India', sort_order: 3 },
       { name: 'working_hours', label: 'Working Hours', field_type: 'short_text', value: 'Monday - Saturday: 9:00 AM - 7:00 PM IST', sort_order: 4 }
     ]
