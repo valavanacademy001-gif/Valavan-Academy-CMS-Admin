@@ -54,44 +54,7 @@ export async function uploadMediaFile(
       .upload(path, file, { upsert: false })
 
     if (uploadError) {
-      console.warn(`Supabase Storage upload warning (${uploadError.message}). Falling back to direct database data URL storage.`)
-      // 2. Fallback: If file <= 4MB, read as data URL so upload never fails due to storage RLS
-      if (file.size <= 4.5 * 1024 * 1024) {
-        try {
-          file_url = await readFileAsDataUrl(file)
-          storage_path = null
-        } catch {
-          return {
-            file_url: '',
-            filename,
-            original_name: file.name,
-            file_type: fileType,
-            file_size: file.size,
-            storage_path: null,
-            error: `Failed to read file: ${file.name}`
-          }
-        }
-      } else {
-        return {
-          file_url: '',
-          filename,
-          original_name: file.name,
-          file_type: fileType,
-          file_size: file.size,
-          storage_path: null,
-          error: `Upload failed: ${uploadError.message}. For files over 4MB, please run the Storage RLS policy in Supabase SQL editor.`
-        }
-      }
-    } else {
-      const { data: { publicUrl } } = supabase.storage.from('cms-media').getPublicUrl(path)
-      file_url = publicUrl
-    }
-  } catch (err: any) {
-    console.warn('Storage exception, using data fallback:', err?.message)
-    if (file.size <= 4.5 * 1024 * 1024) {
-      file_url = await readFileAsDataUrl(file)
-      storage_path = null
-    } else {
+      console.error(`Supabase Storage upload error (${uploadError.message}).`)
       return {
         file_url: '',
         filename,
@@ -99,8 +62,22 @@ export async function uploadMediaFile(
         file_type: fileType,
         file_size: file.size,
         storage_path: null,
-        error: `Upload failed: ${err?.message || 'Storage error'}`
+        error: `Storage upload failed: ${uploadError.message}. Please verify the 'cms-media' storage bucket policy.`
       }
+    } else {
+      const { data: { publicUrl } } = supabase.storage.from('cms-media').getPublicUrl(path)
+      file_url = publicUrl
+    }
+  } catch (err: any) {
+    console.error('Storage exception:', err?.message)
+    return {
+      file_url: '',
+      filename,
+      original_name: file.name,
+      file_type: fileType,
+      file_size: file.size,
+      storage_path: null,
+      error: `Upload failed: ${err?.message || 'Storage error'}`
     }
   }
 
